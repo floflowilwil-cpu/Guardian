@@ -1,0 +1,58 @@
+﻿# Build
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Aa]rtifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / IDE
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Logs
+*.log
+logs/
+
+# Databases and local data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+data/local/
+
+# Security-sensitive local files
+*.pfx
+*.p12
+*.key
+*.pem
+secrets/
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Test results
+TestResults/
+coverage/
+coverage.*

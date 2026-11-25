@@ -1,0 +1,38 @@
+﻿name: Guardian CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+
+      - name: Display .NET version
+        run: dotnet --version
+
+      - name: Restore solution
+        run: dotnet restore Guardian.sln
+
+      - name: Build solution
+        run: dotnet build Guardian.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test Guardian.sln --configuration Release --no-build --no-restore

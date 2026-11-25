@@ -73,21 +73,22 @@ public class ModelGovernanceTests
     }
 
     [Fact]
-    public async Task ModelRegistry_RollbackRevertsToCertifiedVersion()
+    public async Task ModelRegistry_DoesNotClaimUnavailableHistoricalVersions()
     {
         var registry = new ModelRegistry();
 
         var initialActive = await registry.GetActiveModelAsync();
-        Assert.Equal("v1.4.0-tree-ensemble", initialActive.Version);
+        Assert.Equal("v1.5.0-static-rules", initialActive.Version);
+        Assert.False(initialActive.IsSigned);
+        Assert.Equal(string.Empty, initialActive.Sha256Hash);
 
-        // Déclenchement d'un rollback vers v1.3.0-stable
         var rollbackResult = await registry.RollbackToVersionAsync("v1.3.0-stable", "Dérive détectée sur faux positifs");
 
-        Assert.True(rollbackResult.Success);
-        Assert.Equal("v1.3.0-stable", rollbackResult.ActiveVersion);
+        Assert.False(rollbackResult.Success);
+        Assert.Equal(initialActive.Version, rollbackResult.ActiveVersion);
 
         var currentActive = await registry.GetActiveModelAsync();
-        Assert.Equal("v1.3.0-stable", currentActive.Version);
+        Assert.Equal(initialActive.Version, currentActive.Version);
     }
 
     [Fact]

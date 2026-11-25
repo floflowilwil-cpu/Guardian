@@ -1,12 +1,13 @@
 namespace Guardian.AI.Risk;
 
 /// <summary>
-/// Calibre les scores bruts des modèles prédictifs via la méthode de mise à l'échelle de Platt (Platt Scaling)
-/// et régression logistique afin que les probabilités reflètent fidèlement les fréquences empiriques réelles.
+/// Applique une transformation sigmoïde paramétrée aux scores bruts.
+/// Les paramètres par défaut ne constituent pas une calibration empirique démontrée;
+/// ils doivent être ajustés et évalués sur un jeu de validation représentatif.
 /// </summary>
 public sealed class ProbabilityCalibrator
 {
-    // Paramètres calibrés sur un corpus de validation de 10 000 échantillons (benign + malware)
+    // Valeurs de départ configurables, en attente d'une calibration sur un corpus documenté.
     private readonly double _parameterA;
     private readonly double _parameterB;
 
@@ -15,6 +16,16 @@ public sealed class ProbabilityCalibrator
     /// </summary>
     public ProbabilityCalibrator(double parameterA = -2.4, double parameterB = 0.15)
     {
+        if (!double.IsFinite(parameterA))
+        {
+            throw new ArgumentOutOfRangeException(nameof(parameterA), "Le paramètre doit être fini.");
+        }
+
+        if (!double.IsFinite(parameterB))
+        {
+            throw new ArgumentOutOfRangeException(nameof(parameterB), "Le paramètre doit être fini.");
+        }
+
         _parameterA = parameterA;
         _parameterB = parameterB;
     }
@@ -25,6 +36,11 @@ public sealed class ProbabilityCalibrator
     /// </summary>
     public double Calibrate(double rawScore)
     {
+        if (!double.IsFinite(rawScore) || rawScore < 0.0 || rawScore > 1.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(rawScore), "Le score brut doit être fini et compris entre 0 et 1.");
+        }
+
         // Bornage de sécurité pour éviter les instabilités numériques
         double clampedRaw = Math.Clamp(rawScore, 0.001, 0.999);
         
@@ -51,6 +67,11 @@ public sealed class ProbabilityCalibrator
         double sumSquaredError = 0.0;
         foreach (var (prob, actual) in evaluations)
         {
+            if (!double.IsFinite(prob) || prob < 0.0 || prob > 1.0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(evaluations), "Chaque probabilité doit être finie et comprise entre 0 et 1.");
+            }
+
             double target = actual ? 1.0 : 0.0;
             double diff = prob - target;
             sumSquaredError += diff * diff;

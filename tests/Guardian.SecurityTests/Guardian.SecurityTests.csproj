@@ -15,6 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Guardian.Contracts\Guardian.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Guardian.Core\Guardian.Core.csproj" />
+    <ProjectReference Include="..\..\src\Guardian.AI\Guardian.AI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

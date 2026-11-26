@@ -69,7 +69,7 @@
 
         <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,14,0,0">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE72E;" Style="{StaticResource Glyph}" FontSize="20" Foreground="{DynamicResource AccentBrush}" Margin="0,0,12,0"/>
+                <Image Source="/Assets/lock.png" Width="64" Height="64" Margin="0,0,14,0" RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
                 <StackPanel>
                     <TextBlock Text="Quarantaine sécurisée" FontWeight="SemiBold"/>
                     <TextBlock Text="Les fichiers isolés ne peuvent pas être exécutés." Style="{StaticResource MutedText}"/>

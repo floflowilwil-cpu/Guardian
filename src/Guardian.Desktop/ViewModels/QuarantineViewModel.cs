@@ -15,8 +15,8 @@ public sealed class QuarantineViewModel : ObservableObject, IPage
     public QuarantineViewModel(IGuardianClient client)
     {
         _client = client;
-        RestoreCommand = new RelayCommand(async () => await RunAsync(ids => _client.RestoreAsync(ids), "Restauration"));
-        DeleteCommand = new RelayCommand(async () => await DeleteAsync());
+        RestoreCommand = new AsyncRelayCommand(() => RunAsync(ids => _client.RestoreAsync(ids), "Restauration"));
+        DeleteCommand = new AsyncRelayCommand(DeleteAsync);
     }
 
     public ObservableCollection<QuarantineItem> Items { get; } = new();

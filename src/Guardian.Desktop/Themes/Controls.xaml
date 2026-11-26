@@ -26,6 +26,11 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Padding" Value="16"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="2" Opacity="0.18" Color="#000000"/>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ===== Boutons ===== -->
@@ -38,8 +43,13 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"
-                            Padding="{TemplateBinding Padding}">
+                    <Border x:Name="Bd" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#168DFF" Offset="0"/>
+                                <GradientStop Color="#0875D9" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>

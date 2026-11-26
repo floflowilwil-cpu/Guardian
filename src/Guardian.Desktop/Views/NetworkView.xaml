@@ -11,14 +11,9 @@
 
         <TextBlock Grid.Row="0" Text="Activité réseau" Style="{StaticResource PageTitle}"/>
 
-        <!-- Zone carte : emplacement réservé, la carte des connexions viendra avec Guardian.Network -->
+        <!-- Carte stylisée des connexions -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Height="190">
-            <Grid>
-                <TextBlock Text="&#xE774;" Style="{StaticResource Glyph}" FontSize="96" Opacity="0.18"
-                           Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/>
-                <TextBlock Text="Carte des connexions (bientôt disponible)" Style="{StaticResource MutedText}"
-                           HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
-            </Grid>
+            <Image Source="/Assets/map.png" RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
         </Border>
 
         <UniformGrid Grid.Row="2" Columns="2" Margin="0,14,0,0">

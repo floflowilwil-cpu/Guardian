@@ -4,8 +4,10 @@
         xmlns:vm="clr-namespace:Guardian.Desktop.ViewModels"
         xmlns:views="clr-namespace:Guardian.Desktop.Views"
         Title="GUARDIAN — Sécurité Windows" Width="1360" Height="850" MinWidth="1050" MinHeight="700"
+        Title="GUARDIAN — Sécurité Windows" Width="1360" Height="850" MinWidth="1050" MinHeight="700"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
         Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource TextBrush}" FontFamily="Segoe UI">
         Foreground="{DynamicResource TextBrush}" FontFamily="Segoe UI">
 
     <WindowChrome.WindowChrome>
@@ -28,11 +30,19 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>
             <RowDefinition Height="112"/>
+            <RowDefinition Height="112"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="42"/>
+            <RowDefinition Height="42"/>
         </Grid.RowDefinitions>
 
+        <!-- Barre de fenêtre -->
+        <Grid Grid.Row="0" Background="#050D1C">
+            <StackPanel Orientation="Horizontal" Margin="18,0" VerticalAlignment="Center">
+                <TextBlock Text="&#xE83D;" Style="{StaticResource Glyph}" Foreground="{DynamicResource AccentBrush}" Margin="0,0,9,0"/>
+                <TextBlock Text="GUARDIAN" FontWeight="Bold" FontSize="12"/>
+                <TextBlock Text="  •  Votre allié sécurité sur Windows" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="8,0,0,0"/>
         <!-- Barre de fenêtre -->
         <Grid Grid.Row="0" Background="#050D1C">
             <StackPanel Orientation="Horizontal" Margin="18,0" VerticalAlignment="Center">
@@ -55,14 +65,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Grid Width="76" Height="82" VerticalAlignment="Center">
-                    <Path Data="M38,3 L70,15 L67,48 C63,65 49,75 38,80 C27,75 13,65 9,48 L6,15 Z"
-                          Fill="#102D59" Stroke="#12C8FF" StrokeThickness="2.8"/>
-                    <TextBlock Text="G" FontSize="43" FontWeight="Bold" Foreground="#26D9FF"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-4,0,0"/>
-                    <Path Data="M23,43 L33,53 L54,30" Stroke="#35E8FF" StrokeThickness="4"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
-                </Grid>
+                <Image Source="/Assets/shield.png" Width="84" Height="94" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="18,0,0,0">
                     <TextBlock Text="GUARDIAN" FontSize="32" FontWeight="Bold" Foreground="#EAF5FF"/>
                     <TextBlock Text="Détecter. Protéger. Réagir." FontSize="16" FontWeight="SemiBold" Foreground="#42D5FF" Margin="1,0,0,3"/>
@@ -93,17 +96,10 @@
             </Grid>
         </Border>
 
-        <!-- Le mode démo est désormais discret et intégré au thème, jamais jaune. -->
-        <Border Grid.Row="2" Background="#102B4B" BorderBrush="#205A83" BorderThickness="0,0,0,1"
-                Padding="12,5" Visibility="{Binding IsDemo, Converter={StaticResource BoolToVisibility}}">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="&#xE946;" Style="{StaticResource Glyph}" Foreground="#52D9FF" Margin="0,0,8,0" FontSize="12"/>
-                <TextBlock Text="MODE DÉMONSTRATION  ·  Données fictives — aucune protection réelle n'est activée" Foreground="#B9DDF8" FontSize="10"/>
-            </StackPanel>
-        </Border>
-
+        <Grid Grid.Row="3">
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="218"/>
                 <ColumnDefinition Width="218"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
@@ -147,10 +143,55 @@
                         </StackPanel>
                     </Border>
                 </DockPanel>
+            <!-- Navigation latérale -->
+            <Border Grid.Column="0" Background="#07152B" BorderBrush="#1A3A62" BorderThickness="0,0,1,0">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top" Margin="17,18,12,12">
+                        <TextBlock Text="ESPACE DE SÉCURITÉ" FontSize="9" FontWeight="Bold" Foreground="#5F8FB9"/>
+                        <TextBlock Text="Navigation" FontSize="19" FontWeight="SemiBold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,0,10">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource NavButton}"
+                                        Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}">
+                                    <Border x:Name="Row" CornerRadius="8" Padding="12,10" Background="Transparent">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="Icon" Text="{Binding Glyph}" Style="{StaticResource Glyph}"
+                                                       Width="25" Foreground="{DynamicResource MutedBrush}"/>
+                                            <TextBlock x:Name="Label" Text="{Binding Title}" FontSize="12"
+                                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Button>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                        <Setter TargetName="Row" Property="Background" Value="#123B69"/>
+                                        <Setter TargetName="Icon" Property="Foreground" Value="#39D8FF"/>
+                                        <Setter TargetName="Label" Property="Foreground" Value="#F2F8FF"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Border DockPanel.Dock="Bottom" Margin="12,8,12,14" Padding="11" Background="#0D2442" CornerRadius="9">
+                        <StackPanel>
+                            <TextBlock Text="GUARDIAN" FontSize="10" FontWeight="Bold" Foreground="#58DFFF"/>
+                            <TextBlock Text="Sécurité locale Windows" FontSize="9" Foreground="#88A9CC" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </DockPanel>
             </Border>
 
             <!-- Zone de page avec défilement propre -->
-            <Border Grid.Column="1" Background="Transparent">
+            <Border Grid.Column="1">
+                <Border.Background>
+                    <RadialGradientBrush Center="0.8,0.1" RadiusX="0.95" RadiusY="0.95">
+                        <GradientStop Color="#2A1259C8" Offset="0"/>
+                        <GradientStop Color="#001259C8" Offset="1"/>
+                    </RadialGradientBrush>
+                </Border.Background>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="26,22,26,24">
                     <ContentControl Content="{Binding CurrentPage}"/>
                 </ScrollViewer>
@@ -163,9 +204,9 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="&#xE72E;" Style="{StaticResource Glyph}" Foreground="#39D8FF" Margin="0,0,8,0"/>
                     <TextBlock Text="Une protection complète" FontSize="10" Foreground="#BFD7F0"/>
-                    <TextBlock Text="     ⚡     Performances optimisées" FontSize="10" Foreground="#BFD7F0"/>
+                    <TextBlock Text="     ⚡     Des performances optimisées     🔒     Votre vie privée respectée" FontSize="10" Foreground="#BFD7F0"/>
                 </StackPanel>
-                <TextBlock Text="Windows 10 / 11" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="10" Foreground="#7FA6CC"/>
+                <TextBlock Text="Compatible Windows 10 / 11" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="10" Foreground="#7FA6CC"/>
             </Grid>
         </Border>
     </Grid>

@@ -24,8 +24,13 @@
     </UserControl.Resources>
 
     <StackPanel>
-        <TextBlock Text="Centre d'analyse" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Choisissez votre type d'analyse" FontSize="15" Margin="0,0,0,12"/>
+        <Grid Margin="0,0,0,12">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Centre d'analyse" Style="{StaticResource PageTitle}" Margin="0,0,0,6"/>
+                <TextBlock Text="Choisissez votre type d'analyse" FontSize="15"/>
+            </StackPanel>
+            <ContentControl Content="{StaticResource MagnifierArt}" Width="110" Height="110" HorizontalAlignment="Right"/>
+        </Grid>
 
         <UniformGrid Columns="3">
             <Button Style="{StaticResource ChoiceCard}" Tag="{Binding IsQuick}" Margin="0,0,10,0"
@@ -67,7 +72,7 @@
                     <TextBlock Text="Analyse en cours..." FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Percent, StringFormat={}{0} %}" HorizontalAlignment="Right"/>
                 </Grid>
-                <ProgressBar Style="{StaticResource GlowProgress}" Minimum="0" Maximum="100" Value="{Binding Percent}" Margin="0,10"/>
+                <ProgressBar Style="{StaticResource GlowProgress}" Minimum="0" Maximum="100" Value="{Binding Percent, Mode=OneWay}" Margin="0,10"/>
                 <TextBlock Text="{Binding CurrentPath}" Style="{StaticResource MutedText}" TextTrimming="CharacterEllipsis"/>
             </StackPanel>
         </Border>

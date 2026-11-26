@@ -49,6 +49,8 @@ public sealed class PeFeatureExtractor
     /// </summary>
     public FileFeatureVector ExtractFromBytes(byte[] fileBytes, string filePath = "memory_buffer")
     {
+        ArgumentNullException.ThrowIfNull(fileBytes);
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         string sha256 = ComputeSha256(fileBytes);
         double overallEntropy = EntropyCalculator.CalculateShannonEntropy(fileBytes);
         double variance = EntropyCalculator.CalculateByteDistributionVariance(fileBytes);
@@ -66,7 +68,7 @@ public sealed class PeFeatureExtractor
         }
 
         int peHeaderOffset = BinaryPrimitives.ReadInt32LittleEndian(fileBytes.AsSpan(0x3C, 4));
-        if (peHeaderOffset < 0 || peHeaderOffset + 24 > fileBytes.Length)
+        if (peHeaderOffset < 0 || peHeaderOffset > fileBytes.Length - 24)
         {
             return CreateFallbackVector(filePath, sha256, fileBytes.Length, overallEntropy, variance);
         }
@@ -87,7 +89,7 @@ public sealed class PeFeatureExtractor
         ushort sizeOfOptionalHeader = BinaryPrimitives.ReadUInt16LittleEndian(fileBytes.AsSpan(fileHeaderOffset + 16, 2));
 
         int optionalHeaderOffset = fileHeaderOffset + 20;
-        int sectionHeadersOffset = optionalHeaderOffset + sizeOfOptionalHeader;
+        long sectionHeadersOffset = (long)optionalHeaderOffset + sizeOfOptionalHeader;
 
         int executableSections = 0;
         int anomalousSections = 0;
@@ -97,11 +99,13 @@ public sealed class PeFeatureExtractor
         // Analyse des sections
         for (int i = 0; i < numberOfSections; i++)
         {
-            int currentSectionOffset = sectionHeadersOffset + (i * 40);
-            if (currentSectionOffset + 40 > fileBytes.Length)
+            long sectionOffset = (long)sectionHeadersOffset + (i * 40L);
+            if (sectionOffset < 0 || sectionOffset > fileBytes.Length - 40)
             {
                 break;
             }
+
+            int currentSectionOffset = (int)sectionOffset;
 
             string sectionName = Encoding.ASCII.GetString(fileBytes, currentSectionOffset, 8).TrimEnd('\0', ' ');
             uint rawDataSize = BinaryPrimitives.ReadUInt32LittleEndian(fileBytes.AsSpan(currentSectionOffset + 16, 4));
@@ -124,7 +128,10 @@ public sealed class PeFeatureExtractor
                 isPacked = true;
             }
 
-            if (rawDataOffset + rawDataSize <= (uint)fileBytes.Length && rawDataSize > 0)
+            // Addition on uint can wrap for malformed PE headers. Subtract only after
+            // checking the offset, then validate the range before creating a span.
+            if (rawDataSize > 0 && rawDataOffset <= (uint)fileBytes.Length &&
+                rawDataSize <= (uint)fileBytes.Length - rawDataOffset)
             {
                 ReadOnlySpan<byte> sectionBytes = fileBytes.AsSpan((int)rawDataOffset, (int)rawDataSize);
                 double sectionEntropy = EntropyCalculator.CalculateShannonEntropy(sectionBytes);
@@ -135,21 +142,11 @@ public sealed class PeFeatureExtractor
             }
         }
 
-        // Vérification présence de signature numérique authenticode
-        bool hasSecurityCert = false;
-        if (sizeOfOptionalHeader >= 144)
-        {
-            // Position du DataDirectory[4] = Security Directory
-            int securityDirOffset = optionalHeaderOffset + 128; // Standard 32-bit PE / 144 for 64-bit
-            if (securityDirOffset + 8 <= fileBytes.Length)
-            {
-                uint certVirtualAddress = BinaryPrimitives.ReadUInt32LittleEndian(fileBytes.AsSpan(securityDirOffset, 4));
-                uint certSize = BinaryPrimitives.ReadUInt32LittleEndian(fileBytes.AsSpan(securityDirOffset + 4, 4));
-                hasSecurityCert = certVirtualAddress > 0 && certSize > 0;
-            }
-        }
+        // A certificate-table entry only means a signature blob may be present. It does
+        // not establish trust or validity; that requires Authenticode verification.
 
-        // Analyse textuelle des imports / API suspectes
+        // Recherche de chaînes ASCII ressemblant à des noms d'API; ce n'est pas
+        // une lecture de la table d'import et la chaîne ne prouve pas un appel.
         int suspiciousApiCount = CountSuspiciousApis(fileBytes);
         double stringRatio = EntropyCalculator.CalculatePrintableCharacterRatio(fileBytes);
 
@@ -169,22 +166,65 @@ public sealed class PeFeatureExtractor
             ExecutableSectionCount = executableSections,
             AnomalousSectionNameCount = anomalousSections,
             MaxSectionEntropy = maxSectionEntropy,
-            ImportedLibrariesCount = Math.Max(1, (int)(fileBytes.Length / 32768)),
-            ImportedFunctionsCount = suspiciousApiCount * 3,
+            ImportedLibrariesCount = 0,
+            ImportedFunctionsCount = 0,
             SuspiciousApiCallCount = suspiciousApiCount,
-            HasValidDigitalSignature = hasSecurityCert,
-            HasTlsCallback = fileBytes.Length > 2048 && fileBytes[128] % 2 == 1,
-            HasResources = fileBytes.Length > 4096,
-            HasDebugInfo = fileBytes.Length > 8192 && fileBytes[256] % 2 == 0,
+            HasValidDigitalSignature = false,
+            HasTlsCallback = false,
+            HasResources = false,
+            HasDebugInfo = false,
             IsPackedOrObfuscated = isPacked,
-            SuspiciousStringRatio = suspiciousApiCount > 0 ? Math.Min(1.0, suspiciousApiCount * 0.05) : 0.01,
+            SuspiciousStringRatio = 0.0,
             ByteDistributionVariance = variance,
             CustomFeatures = new Dictionary<string, double>
             {
                 ["PrintableStringRatio"] = stringRatio,
-                ["RawToVirtualRatio"] = numberOfSections > 0 ? (double)fileBytes.Length / (numberOfSections * 4096) : 1.0
+                ["RawToVirtualRatio"] = numberOfSections > 0 ? (double)fileBytes.Length / (numberOfSections * 4096) : 1.0,
+                ["CertificateTablePresent"] = HasCertificateTable(fileBytes, optionalHeaderOffset, sizeOfOptionalHeader) ? 1.0 : 0.0
             }
         };
+    }
+
+    private static bool HasCertificateTable(byte[] bytes, int optionalHeaderOffset, ushort optionalHeaderSize)
+    {
+        if (optionalHeaderSize < 2 || optionalHeaderOffset < 0 || optionalHeaderOffset > bytes.Length - 2 ||
+            optionalHeaderSize > bytes.Length - optionalHeaderOffset)
+        {
+            return false;
+        }
+
+        ushort magic = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(optionalHeaderOffset, 2));
+        (int directoryOffset, int directoryCountOffset) = magic switch
+        {
+            0x10B => (96, 92),  // PE32
+            0x20B => (112, 108), // PE32+
+            _ => (-1, -1)
+        };
+
+        // The certificate table is data directory entry 4. Require that the optional
+        // header declares at least five directories and that the entry fits in the header.
+        if (directoryOffset < 0 || directoryCountOffset + 4 > optionalHeaderSize ||
+            directoryOffset + (5 * 8) > optionalHeaderSize)
+        {
+            return false;
+        }
+
+        int countOffset = optionalHeaderOffset + directoryCountOffset;
+        uint directoryCount = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(countOffset, 4));
+        if (directoryCount < 5)
+        {
+            return false;
+        }
+
+        int entryOffset = optionalHeaderOffset + directoryOffset + (4 * 8);
+        if (entryOffset < 0 || entryOffset + 8 > bytes.Length)
+        {
+            return false;
+        }
+
+        uint fileOffset = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(entryOffset, 4));
+        uint size = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(entryOffset + 4, 4));
+        return fileOffset > 0 && size > 0 && fileOffset <= (uint)bytes.Length && size <= (uint)bytes.Length - fileOffset;
     }
 
     private static int CountSuspiciousApis(byte[] bytes)

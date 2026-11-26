@@ -46,12 +46,7 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <Grid Grid.Column="1" Width="130" Height="146" VerticalAlignment="Center">
-                    <Path Data="{StaticResource ShieldGeometry}" Stretch="Uniform" Opacity="0.18"
-                          Fill="{Binding State, Converter={StaticResource StateToBrush}}"/>
-                    <Path Data="{StaticResource ShieldGeometry}" Stretch="Uniform" StrokeThickness="3"
-                          Stroke="{Binding State, Converter={StaticResource StateToBrush}}"/>
-                </Grid>
+                <Image Grid.Column="1" Source="/Assets/shield.png" Width="190" Height="214" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
             </Grid>
         </Border>
 

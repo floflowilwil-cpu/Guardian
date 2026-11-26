@@ -3,13 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Guardian.Desktop.ViewModels"
         xmlns:views="clr-namespace:Guardian.Desktop.Views"
-        Title="GUARDIAN — Sécurité Windows" Width="1360" Height="850" MinWidth="1050" MinHeight="700"
+        Title="GUARDIAN — Sécurité Windows"
+        Icon="/Assets/guardian.ico"
+        Width="1360" Height="850" MinWidth="1050" MinHeight="700"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
         Background="{DynamicResource WindowBackgroundBrush}"
         Foreground="{DynamicResource TextBrush}" FontFamily="Segoe UI">
 
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="36" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0"/>
+        <WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0"
+                      CornerRadius="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
 
     <Window.Resources>
@@ -22,150 +25,176 @@
         <DataTemplate DataType="{x:Type vm:AssistantViewModel}"><views:AssistantView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><views:SettingsView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}"><views:PlaceholderView/></DataTemplate>
+
+        <!-- Boutons de la barre de titre : visibles et cliquables dans la zone "caption" -->
+        <Style x:Key="CaptionButton" TargetType="Button" BasedOn="{StaticResource TitleBarButton}">
+            <Setter Property="Foreground" Value="#E6F1FF"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+        </Style>
+        <Style x:Key="CloseCaptionButton" TargetType="Button">
+            <Setter Property="Foreground" Value="#E6F1FF"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#E81123"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="36"/>
-            <RowDefinition Height="112"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="42"/>
+            <RowDefinition Height="40"/>   <!-- barre de fenêtre -->
+            <RowDefinition Height="112"/>  <!-- identité Guardian -->
+            <RowDefinition Height="*"/>    <!-- navigation + pages -->
+            <RowDefinition Height="36"/>   <!-- barre de statut -->
         </Grid.RowDefinitions>
 
-        <!-- Barre de fenêtre -->
+        <!-- ===== Barre de fenêtre : logo, titre, − ☐ ✕ ===== -->
         <Grid Grid.Row="0" Background="#050D1C">
-            <StackPanel Orientation="Horizontal" Margin="18,0" VerticalAlignment="Center">
-                <TextBlock Text="&#xE83D;" Style="{StaticResource Glyph}" Foreground="{DynamicResource AccentBrush}" Margin="0,0,9,0"/>
-                <TextBlock Text="GUARDIAN" FontWeight="Bold" FontSize="12"/>
-                <TextBlock Text="  •  Votre allié sécurité sur Windows" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="8,0,0,0"/>
+            <StackPanel Orientation="Horizontal" Margin="14,0" VerticalAlignment="Center">
+                <Image Source="/Assets/guardian-logo.png" Width="22" Height="22"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="GUARDIAN" FontWeight="Bold" FontSize="12" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                <TextBlock Text="•  Votre allié sécurité sur Windows" Foreground="{DynamicResource MutedBrush}"
+                           FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" WindowChrome.IsHitTestVisibleInChrome="True">
-                <Button Style="{StaticResource TitleBarButton}" Content="&#xE921;" Click="OnMinimize" ToolTip="Réduire"/>
-                <Button Style="{StaticResource TitleBarButton}" Content="&#xE922;" Click="OnMaximizeRestore" ToolTip="Agrandir"/>
-                <Button Style="{StaticResource TitleBarButton}" Content="&#xE8BB;" Click="OnClose" ToolTip="Fermer"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Button Style="{StaticResource CaptionButton}" Content="&#xE921;" Click="OnMinimize" ToolTip="Réduire"/>
+                <Button x:Name="MaxRestoreButton" Style="{StaticResource CaptionButton}" Content="&#xE922;"
+                        Click="OnMaximizeRestore" ToolTip="Agrandir"/>
+                <Button Style="{StaticResource CloseCaptionButton}" Content="&#xE8BB;" Click="OnClose" ToolTip="Fermer"/>
             </StackPanel>
         </Grid>
 
-        <!-- Identité visuelle Guardian -->
-        <Border Grid.Row="1" Background="#07162D" BorderBrush="#173B69" BorderThickness="0,0,0,1" Padding="26,14">
+        <!-- ===== Identité visuelle Guardian ===== -->
+        <Border Grid.Row="1" Background="#07162D" BorderBrush="#173B69" BorderThickness="0,0,0,1" Padding="26,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Grid Width="76" Height="82" VerticalAlignment="Center">
-                    <Path Data="M38,3 L70,15 L67,48 C63,65 49,75 38,80 C27,75 13,65 9,48 L6,15 Z"
-                          Fill="#102D59" Stroke="#12C8FF" StrokeThickness="2.8"/>
-                    <TextBlock Text="G" FontSize="43" FontWeight="Bold" Foreground="#26D9FF"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-4,0,0"/>
-                    <Path Data="M23,43 L33,53 L54,30" Stroke="#35E8FF" StrokeThickness="4"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
-                </Grid>
+                <Image Source="/Assets/shield.png" Height="88" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="18,0,0,0">
                     <TextBlock Text="GUARDIAN" FontSize="32" FontWeight="Bold" Foreground="#EAF5FF"/>
                     <TextBlock Text="Détecter. Protéger. Réagir." FontSize="16" FontWeight="SemiBold" Foreground="#42D5FF" Margin="1,0,0,3"/>
                     <TextBlock Text="Une sécurité complète, intelligente et transparente." FontSize="12" Foreground="#A8C6E8"/>
                 </StackPanel>
-                <UniformGrid Grid.Column="2" Rows="1" VerticalAlignment="Center" MinWidth="390">
+                <UniformGrid Grid.Column="2" Rows="1" VerticalAlignment="Center" MinWidth="420">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE9CE;" Style="{StaticResource Glyph}" FontSize="23" Foreground="#39D8FF" HorizontalAlignment="Center"/>
-                        <TextBlock Text="IA locale" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0"/>
+                        <TextBlock Text="&#xE9CE;" Style="{StaticResource Glyph}" FontSize="24" Foreground="#38BDF8" HorizontalAlignment="Center"/>
+                        <TextBlock Text="IA locale" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE72E;" Style="{StaticResource Glyph}" FontSize="23" Foreground="#39D8FF" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Protection" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0"/>
+                        <TextBlock Text="&#xE72E;" Style="{StaticResource Glyph}" FontSize="24" Foreground="#FB923C" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Protection" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE8B7;" Style="{StaticResource Glyph}" FontSize="23" Foreground="#39D8FF" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Sandbox" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0"/>
+                        <TextBlock Text="&#xE8B7;" Style="{StaticResource Glyph}" FontSize="24" Foreground="#A78BFA" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Sandbox" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE9D9;" Style="{StaticResource Glyph}" FontSize="23" Foreground="#39D8FF" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Rapports" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0"/>
+                        <TextBlock Text="&#xE9D9;" Style="{StaticResource Glyph}" FontSize="24" Foreground="#F472B6" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Rapports" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE72C;" Style="{StaticResource Glyph}" FontSize="23" Foreground="#39D8FF" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Mises à jour" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0"/>
+                        <TextBlock Text="&#xE72C;" Style="{StaticResource Glyph}" FontSize="24" Foreground="#34D399" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Mises à jour" FontSize="10" Foreground="#C6DDF5" Margin="0,5,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </UniformGrid>
             </Grid>
         </Border>
 
-        <!-- Le mode démo est désormais discret et intégré au thème, jamais jaune. -->
-        <Border Grid.Row="2" Background="#102B4B" BorderBrush="#205A83" BorderThickness="0,0,0,1"
-                Padding="12,5" Visibility="{Binding IsDemo, Converter={StaticResource BoolToVisibility}}">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="&#xE946;" Style="{StaticResource Glyph}" Foreground="#52D9FF" Margin="0,0,8,0" FontSize="12"/>
-                <TextBlock Text="MODE DÉMONSTRATION  ·  Données fictives — aucune protection réelle n'est activée" Foreground="#B9DDF8" FontSize="10"/>
-            </StackPanel>
-        </Border>
-
-        <Grid Grid.Row="3">
+        <!-- ===== Navigation + pages ===== -->
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="218"/>
+                <ColumnDefinition Width="230"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Navigation latérale -->
+            <!-- Navigation latérale (sans le bloc "GUARDIAN" coupé) -->
             <Border Grid.Column="0" Background="#07152B" BorderBrush="#1A3A62" BorderThickness="0,0,1,0">
                 <DockPanel LastChildFill="True">
                     <StackPanel DockPanel.Dock="Top" Margin="17,18,12,12">
                         <TextBlock Text="ESPACE DE SÉCURITÉ" FontSize="9" FontWeight="Bold" Foreground="#5F8FB9"/>
                         <TextBlock Text="Navigation" FontSize="19" FontWeight="SemiBold" Margin="0,5,0,0"/>
                     </StackPanel>
-                    <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,0,10">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Style="{StaticResource NavButton}"
-                                        Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding}">
-                                    <Border x:Name="Row" CornerRadius="8" Padding="12,10" Background="Transparent">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock x:Name="Icon" Text="{Binding Glyph}" Style="{StaticResource Glyph}"
-                                                       Width="25" Foreground="{DynamicResource MutedBrush}"/>
-                                            <TextBlock x:Name="Label" Text="{Binding Title}" FontSize="12"
-                                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Button>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter TargetName="Row" Property="Background" Value="#123B69"/>
-                                        <Setter TargetName="Icon" Property="Foreground" Value="#39D8FF"/>
-                                        <Setter TargetName="Label" Property="Foreground" Value="#F2F8FF"/>
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Border DockPanel.Dock="Bottom" Margin="12,8,12,14" Padding="11" Background="#0D2442" CornerRadius="9">
-                        <StackPanel>
-                            <TextBlock Text="GUARDIAN" FontSize="10" FontWeight="Bold" Foreground="#58DFFF"/>
-                            <TextBlock Text="Sécurité locale Windows" FontSize="9" Foreground="#88A9CC" Margin="0,3,0,0"/>
-                        </StackPanel>
-                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,0,10">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource NavButton}"
+                                            Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}">
+                                        <Border x:Name="Row" CornerRadius="8" Padding="12,10"
+                                                Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Glyph}" Style="{StaticResource Glyph}"
+                                                           Width="28" FontSize="17" Foreground="{Binding IconColor}"/>
+                                                <TextBlock x:Name="Label" Text="{Binding Title}" FontSize="13"
+                                                           Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Button>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter TargetName="Row" Property="Background" Value="#123B69"/>
+                                            <Setter TargetName="Row" Property="BorderBrush" Value="#39D8FF"/>
+                                            <Setter TargetName="Label" Property="Foreground" Value="#F2F8FF"/>
+                                            <Setter TargetName="Label" Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </DockPanel>
             </Border>
 
-            <!-- Zone de page avec défilement propre -->
-            <Border Grid.Column="1" Background="Transparent">
+            <!-- Zone de page -->
+            <Border Grid.Column="1">
+                <Border.Background>
+                    <RadialGradientBrush Center="0.8,0.1" RadiusX="0.95" RadiusY="0.95">
+                        <GradientStop Color="#2A1259C8" Offset="0"/>
+                        <GradientStop Color="#001259C8" Offset="1"/>
+                    </RadialGradientBrush>
+                </Border.Background>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="26,22,26,24">
                     <ContentControl Content="{Binding CurrentPage}"/>
                 </ScrollViewer>
             </Border>
         </Grid>
 
-        <!-- Barre de statut -->
-        <Border Grid.Row="4" Background="#050D1C" BorderBrush="#173B69" BorderThickness="0,1,0,0" Padding="22,0">
+        <!-- ===== Barre de statut ===== -->
+        <Border Grid.Row="3" Background="#050D1C" BorderBrush="#173B69" BorderThickness="0,1,0,0" Padding="22,0">
             <Grid VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="&#xE72E;" Style="{StaticResource Glyph}" Foreground="#39D8FF" Margin="0,0,8,0"/>
-                    <TextBlock Text="Une protection complète" FontSize="10" Foreground="#BFD7F0"/>
-                    <TextBlock Text="     ⚡     Performances optimisées" FontSize="10" Foreground="#BFD7F0"/>
+                    <TextBlock Text="&#xE72E;" Style="{StaticResource Glyph}" FontSize="13" Foreground="#FB923C" Margin="0,0,7,0"/>
+                    <TextBlock Text="Une protection complète" FontSize="10" Foreground="#BFD7F0" VerticalAlignment="Center"/>
+                    <TextBlock Text="&#xE945;" Style="{StaticResource Glyph}" FontSize="13" Foreground="#FBBF24" Margin="28,0,7,0"/>
+                    <TextBlock Text="Des performances optimisées" FontSize="10" Foreground="#BFD7F0" VerticalAlignment="Center"/>
+                    <TextBlock Text="&#xE7B3;" Style="{StaticResource Glyph}" FontSize="13" Foreground="#34D399" Margin="28,0,7,0"/>
+                    <TextBlock Text="Votre vie privée respectée" FontSize="10" Foreground="#BFD7F0" VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Text="Windows 10 / 11" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="10" Foreground="#7FA6CC"/>
+                <TextBlock Text="Compatible Windows 10 / 11" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           FontSize="10" Foreground="#7FA6CC"/>
             </Grid>
         </Border>
     </Grid>

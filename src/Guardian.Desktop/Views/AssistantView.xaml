@@ -12,7 +12,13 @@
         <TextBlock Grid.Row="0" Text="Assistant Guardian IA" Style="{StaticResource PageTitle}"/>
 
         <Border Grid.Row="1" Style="{StaticResource Card}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Image Source="/Assets/robot.png" Width="150" Height="172" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Messages}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -30,6 +36,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+            </Grid>
         </Border>
 
         <ItemsControl Grid.Row="2" ItemsSource="{Binding Suggestions}" Margin="0,12,0,0">

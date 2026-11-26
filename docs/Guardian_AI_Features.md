@@ -1,35 +1,35 @@
-# Spécification et Dictionnaire des Caractéristiques IA — Guardian.AI
+# Guardian.AI — caractéristiques effectivement extraites
 
-**Auteur :** Florent  
-**Module :** `Guardian.AI.FeatureExtraction` & `Guardian.Contracts.AI.Models.FileFeatureVector`  
-**Version :** 3.0  
+`PeFeatureExtractor` réalise une inspection statique simplifiée en mémoire. Il n’exécute pas le fichier. Les caractéristiques sont des indices, pas des verdicts.
 
----
+| Champ | Calcul actuel | Limite d’interprétation |
+|---|---|---|
+| `Sha256` | SHA-256 du contenu complet | Identifie le contenu; ne détermine pas sa réputation sans base externe. |
+| `FileSizeBytes` | Longueur du tableau d’octets | Aucun plafonnement mémoire n’est appliqué par cette API. |
+| `ShannonEntropy` | Entropie de Shannon de tous les octets | Compression, ressources et chiffrement peuvent tous produire une entropie élevée. |
+| `ByteDistributionVariance` | Variance calculée sur les fréquences d’octets | Signal statistique brut, sans seuil universel d’innocuité ou de malveillance. |
+| `HasPeHeader` | Contrôle `MZ` et `PE\0\0` aux emplacements attendus | Contrôle minimal; ne signifie pas que toute la structure PE est valide. |
+| `SectionCount` | Valeur déclarée dans l’en-tête PE | Les tables malformées ou tronquées ne sont pas toutes rejetées comme une erreur explicite. |
+| `ExecutableSectionCount` | Bit `IMAGE_SCN_MEM_EXECUTE` des entrées de section accessibles | Indice structurel seulement. |
+| `AnomalousSectionNameCount` | Noms absents de la liste courante des noms standard | Les noms inconnus sont fréquents dans les fichiers légitimes; ne pas les traiter comme preuve. |
+| `MaxSectionEntropy` | Maximum d’entropie parmi les plages de section bornées | Les plages hors fichier sont ignorées. |
+| `IsPackedOrObfuscated` | Noms de packer connus ou entropie élevée | Heuristique rudimentaire; peut produire des faux positifs et négatifs. |
+| `SuspiciousApiCallCount` | Recherche de chaînes ASCII prédéfinies dans tout le fichier | Ce n’est pas une analyse de la table d’import; une chaîne présente ne prouve pas un appel. |
+| `HasValidDigitalSignature` | Toujours `false` dans cet extracteur | L’API ne vérifie pas Authenticode. Une entrée de certificat PE ne suffirait pas à établir la validité. |
+| `HasTlsCallback`, `HasResources`, `HasDebugInfo` | Toujours `false` dans cet extracteur | Ces structures ne sont pas encore analysées; `false` signifie ici « non évalué », pas « absent ». |
+| `ImportedLibrariesCount`, `ImportedFunctionsCount` | Toujours `0` dans cet extracteur | La table d’import PE n’est pas encore analysée. |
+| `SuspiciousStringRatio` | Toujours `0` pour les PE | Le ratio de chaînes suspectes n’est pas encore calculé. |
+| `CustomFeatures.PrintableStringRatio` | Proportion d’octets imprimables | Ratio général de texte imprimable, et non ratio de chaînes malveillantes. |
+| `CustomFeatures.CertificateTablePresent` | Présence d’une plage non vide et bornée dans l’entrée de répertoire certificat PE32/PE32+ | Présence potentielle uniquement; aucun certificat, chaîne de confiance, horodatage ou révocation n’est vérifié. |
 
-## 1. Vue d'ensemble du Pipeline d'Extraction
-Toutes les caractéristiques sont extraites de manière statique et sécurisée sans exécution du binaire cible. Le fichier est lu en mémoire tampon sous forme de flux d'octets protégés. Aucune commande système n'est invoquée.
+Pour un fichier non-PE, quelques champs généraux et une recherche textuelle d’indicateurs sont produits. Les caractéristiques PE restent à zéro ou à `false`; ne pas interpréter ces valeurs comme une analyse complète du format.
 
----
+## Sécurité, confidentialité et usage
 
-## 2. Dictionnaire Détaillé des Caractéristiques
+- Le fichier est lu entièrement en mémoire. Les consommateurs doivent imposer leurs propres limites de taille et de durée.
+- Aucune exécution du binaire n’est effectuée.
+- `FilePath` est conservé dans le vecteur retourné; ne pas l’envoyer ni le journaliser sans besoin et autorisation.
+- La classification et le score composite restent indicatifs et doivent être suivis d’une décision de `Guardian.Policy`.
+- Une signature valide ne rend pas automatiquement un programme sûr; l’extracteur actuel ne valide pas les signatures.
 
-| Caractéristique | Type | Description | Signification de Sécurité |
-|---|---|---|---|
-| `ShannonEntropy` | `double` (0.0 - 8.0) | Entropie globale calculée sur l'ensemble du binaire : $H = -\sum p_i \log_2(p_i)$. | Les fichiers standards se situent entre 4.5 et 6.5. Une entropie > 7.2 indique un chiffrement, une compression ou un packer de malware. |
-| `MaxSectionEntropy` | `double` (0.0 - 8.0) | Entropie maximale mesurée sur une section PE individuelle. | Une section avec $H > 7.5$ abrite quasi-systématiquement un payload dissimulé ou du code shellcode chiffré. |
-| `FileSizeBytes` | `long` | Taille physique en octets. | Utilisé pour normaliser les ratios et détecter les anomalies de bourrage (overlay padding). |
-| `HasPeHeader` | `bool` | Présence d'un en-tête valide DOS `MZ` (0x5A4D) et PE `PE\0\0` (0x00004550). | Différencie les exécutables natifs Windows des scripts ou documents. |
-| `SectionCount` | `int` | Nombre total de sections déclarées dans l'en-tête PE. | Les exécutables légitimes possèdent généralement 3 à 7 sections. Moins de 2 ou plus de 10 est suspect. |
-| `ExecutableSectionCount` | `int` | Nombre de sections marquées avec le flag `IMAGE_SCN_MEM_EXECUTE` (0x20000000). | Les compilateurs normaux n'émettent qu'une seule section exécutable (`.text`). La présence de plusieurs sections exécutables est un fort indicateur d'injection. |
-| `AnomalousSectionNameCount` | `int` | Nombre de sections ne figurant pas dans la liste standard (`.text`, `.data`, `.rdata`, `.rsrc`, `.reloc`, etc.). | Les packers (UPX, Themida, VMProtect) injectent des noms de section non conventionnels (`.upx0`, `.vmp1`). |
-| `IsPackedOrObfuscated` | `bool` | Flag synthétique dérivé des noms de section, de l'entropie et de la signature de packer. | Permet d'ajuster immédiatement les poids heuristiques. |
-| `SuspiciousApiCallCount` | `int` | Nombre d'occurrences d'API de manipulation mémoire/processus identifiées dans la table d'import. | Détecte : `VirtualAlloc`, `VirtualProtect`, `WriteProcessMemory`, `CreateRemoteThread`, `SetWindowsHookEx`, `InternetOpen`, `WinExec`. |
-| `HasValidDigitalSignature` | `bool` | Présence d'une entrée non nulle dans le répertoire de sécurité PE (Authenticode). | Réduit le risque de 70% si présent et intègre. |
-| `HasTlsCallback` | `bool` | Présence de callbacks TLS exécutés avant le point d'entrée principal (`AddressOfEntryPoint`). | Fréquemment exploité par les malwares pour déjouer les débogueurs. |
-| `ByteDistributionVariance` | `double` | Variance de la fréquence d'apparition des 256 valeurs d'octets. | Un chiffrement parfait produit une variance très basse (< 5000), alors qu'un code clair présente des pics prononcés. |
-| `SuspiciousStringRatio` | `double` (0.0 - 1.0) | Proportion de motifs d'URL, de commandes shell ou de clés de registre dans les chaînes imprimables. | Indicateur heuristique de fonctionnalités de dropper ou de C2. |
-
----
-
-## 3. Confidentialité et Données Personnelles
-Aucune caractéristique n'extrait de nom d'utilisateur, de chemin de document personnel, de mot de passe, de secret ou de jeton. Les chemins sont anonymisés au niveau du simple nom de fichier lors des cycles d'apprentissage continu.
+Voir [Guardian_AI_Architecture.md](Guardian_AI_Architecture.md) pour le parcours et les capacités du module.

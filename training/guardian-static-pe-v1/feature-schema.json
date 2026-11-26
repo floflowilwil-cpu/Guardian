@@ -1,0 +1,32 @@
+{
+  "schema_id": "guardian.static-pe.v1",
+  "schema_version": 1,
+  "task": "binary classification of Windows PE files",
+  "input": {
+    "name": "features",
+    "tensor_type": "float32",
+    "shape": [1, 9],
+    "columns_in_order": [
+      { "name": "file_size_bytes", "source": "FileFeatureVector.FileSizeBytes", "encoding": "float32" },
+      { "name": "shannon_entropy", "source": "FileFeatureVector.ShannonEntropy", "encoding": "float32", "range": [0, 8] },
+      { "name": "section_count", "source": "FileFeatureVector.SectionCount", "encoding": "float32", "minimum": 0 },
+      { "name": "executable_section_count", "source": "FileFeatureVector.ExecutableSectionCount", "encoding": "float32", "minimum": 0 },
+      { "name": "anomalous_section_name_count", "source": "FileFeatureVector.AnomalousSectionNameCount", "encoding": "float32", "minimum": 0 },
+      { "name": "max_section_entropy", "source": "FileFeatureVector.MaxSectionEntropy", "encoding": "float32", "range": [0, 8] },
+      { "name": "suspicious_api_string_match_count", "source": "FileFeatureVector.SuspiciousApiCallCount", "encoding": "float32", "minimum": 0, "note": "Counts ASCII string matches; it is not an import-table parse or proof of an API call." },
+      { "name": "is_packed_or_obfuscated", "source": "FileFeatureVector.IsPackedOrObfuscated", "encoding": "float32", "mapping": { "false": 0, "true": 1 } },
+      { "name": "byte_distribution_variance", "source": "FileFeatureVector.ByteDistributionVariance", "encoding": "float32", "minimum": 0 }
+    ]
+  },
+  "output": {
+    "meaning": "probability-like score for the malicious class",
+    "range": [0, 1],
+    "calibration": "not established; do not use as an autonomous action threshold"
+  },
+  "compatibility": {
+    "requires_pe_header": true,
+    "unsupported_inputs": "Non-PE files must not be passed to this model.",
+    "schema_change_policy": "Any change in feature meaning, ordering, type, or preprocessing requires a new schema version and a new model artifact."
+  },
+  "data_status": "No matching labeled training dataset is currently included in the repository."
+}

@@ -27,6 +27,14 @@ public sealed class ModelGovernancePipeline
         IReadOnlyList<(ThreatClassificationResult Prediction, ThreatVerdict TrueLabel)> testResults,
         double averageLatencyMs)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(modelId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(modelVersion);
+        ArgumentNullException.ThrowIfNull(testResults);
+        if (!double.IsFinite(averageLatencyMs) || averageLatencyMs < 0.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(averageLatencyMs));
+        }
+
         if (testResults.Count == 0)
         {
             throw new ArgumentException("Le jeu de test ne peut pas être vide.", nameof(testResults));
@@ -41,6 +49,17 @@ public sealed class ModelGovernancePipeline
 
         foreach (var (prediction, trueLabel) in testResults)
         {
+            ArgumentNullException.ThrowIfNull(prediction);
+            if (prediction.Verdict is ThreatVerdict.Error or ThreatVerdict.Inconclusive)
+            {
+                throw new ArgumentException("Un résultat Error ou Inconclusive ne peut pas être compté comme une prédiction de sécurité.", nameof(testResults));
+            }
+
+            if (!double.IsFinite(prediction.CalibratedProbability) || prediction.CalibratedProbability < 0.0 || prediction.CalibratedProbability > 1.0)
+            {
+                throw new ArgumentException("Chaque probabilité calibrée doit être finie et comprise entre 0 et 1.", nameof(testResults));
+            }
+
             bool isActualMalicious = trueLabel == ThreatVerdict.Malicious || trueLabel == ThreatVerdict.Suspicious;
             bool isPredictedMalicious = prediction.Verdict == ThreatVerdict.Malicious || prediction.Verdict == ThreatVerdict.Suspicious;
 
@@ -67,6 +86,11 @@ public sealed class ModelGovernancePipeline
         int total = testResults.Count;
         int benignTotal = trueNegatives + falsePositives;
         int maliciousTotal = truePositives + falseNegatives;
+
+        if (benignTotal == 0 || maliciousTotal == 0)
+        {
+            throw new ArgumentException("Le jeu d'évaluation doit contenir des exemples bénins et malveillants.", nameof(testResults));
+        }
 
         double accuracy = (double)(truePositives + trueNegatives) / total;
         double precision = (truePositives + falsePositives) > 0 ? (double)truePositives / (truePositives + falsePositives) : 1.0;

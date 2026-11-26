@@ -90,7 +90,7 @@ public sealed class IsolationForestAnomalyDetector : IAnomalyDetector
     private void TrainBaselineTrees()
     {
         // Données d'entraînement de référence synthétisées représentant le comportement d'applications saines standard
-        // Features: [Taille, Entropie, NbrSections, APIAppels, ValidSig, PackerIndicator]
+        // Features: [Taille, Entropie, NbrSections, APIAppels, PackerIndicator]
         var random = new Random(42);
         var baselineData = new List<double[]>();
 
@@ -101,7 +101,6 @@ public sealed class IsolationForestAnomalyDetector : IAnomalyDetector
                 4.5 + (random.NextDouble() * 2.0), // Entropy 4.5 - 6.5
                 random.Next(3, 7),                 // Sections 3 - 6
                 random.Next(0, 2),                 // Suspicious APIs 0 - 1
-                1.0,                               // Valid Sig
                 0.0                                // Packer 0
             ]);
         }

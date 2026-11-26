@@ -4,8 +4,10 @@
         xmlns:vm="clr-namespace:Guardian.Desktop.ViewModels"
         xmlns:views="clr-namespace:Guardian.Desktop.Views"
         Title="GUARDIAN — Sécurité Windows" Width="1360" Height="850" MinWidth="1050" MinHeight="700"
+        Title="GUARDIAN — Sécurité Windows" Width="1360" Height="850" MinWidth="1050" MinHeight="700"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
         Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource TextBrush}" FontFamily="Segoe UI">
         Foreground="{DynamicResource TextBrush}" FontFamily="Segoe UI">
 
     <WindowChrome.WindowChrome>
@@ -28,11 +30,19 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>
             <RowDefinition Height="112"/>
+            <RowDefinition Height="112"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="42"/>
+            <RowDefinition Height="42"/>
         </Grid.RowDefinitions>
 
+        <!-- Barre de fenêtre -->
+        <Grid Grid.Row="0" Background="#050D1C">
+            <StackPanel Orientation="Horizontal" Margin="18,0" VerticalAlignment="Center">
+                <TextBlock Text="&#xE83D;" Style="{StaticResource Glyph}" Foreground="{DynamicResource AccentBrush}" Margin="0,0,9,0"/>
+                <TextBlock Text="GUARDIAN" FontWeight="Bold" FontSize="12"/>
+                <TextBlock Text="  •  Votre allié sécurité sur Windows" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="8,0,0,0"/>
         <!-- Barre de fenêtre -->
         <Grid Grid.Row="0" Background="#050D1C">
             <StackPanel Orientation="Horizontal" Margin="18,0" VerticalAlignment="Center">
@@ -87,11 +97,52 @@
         </Border>
 
         <Grid Grid.Row="3">
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="218"/>
                 <ColumnDefinition Width="218"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Navigation latérale -->
+            <Border Grid.Column="0" Background="#07152B" BorderBrush="#1A3A62" BorderThickness="0,0,1,0">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top" Margin="17,18,12,12">
+                        <TextBlock Text="ESPACE DE SÉCURITÉ" FontSize="9" FontWeight="Bold" Foreground="#5F8FB9"/>
+                        <TextBlock Text="Navigation" FontSize="19" FontWeight="SemiBold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,0,10">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource NavButton}"
+                                        Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}">
+                                    <Border x:Name="Row" CornerRadius="8" Padding="12,10" Background="Transparent">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="Icon" Text="{Binding Glyph}" Style="{StaticResource Glyph}"
+                                                       Width="25" Foreground="{DynamicResource MutedBrush}"/>
+                                            <TextBlock x:Name="Label" Text="{Binding Title}" FontSize="12"
+                                                       Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Button>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                        <Setter TargetName="Row" Property="Background" Value="#123B69"/>
+                                        <Setter TargetName="Icon" Property="Foreground" Value="#39D8FF"/>
+                                        <Setter TargetName="Label" Property="Foreground" Value="#F2F8FF"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Border DockPanel.Dock="Bottom" Margin="12,8,12,14" Padding="11" Background="#0D2442" CornerRadius="9">
+                        <StackPanel>
+                            <TextBlock Text="GUARDIAN" FontSize="10" FontWeight="Bold" Foreground="#58DFFF"/>
+                            <TextBlock Text="Sécurité locale Windows" FontSize="9" Foreground="#88A9CC" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </DockPanel>
             <!-- Navigation latérale -->
             <Border Grid.Column="0" Background="#07152B" BorderBrush="#1A3A62" BorderThickness="0,0,1,0">
                 <DockPanel LastChildFill="True">

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.13.12409.143 insiders
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
@@ -12,8 +12,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.Policy", "src\Guardian.Policy\Guardian.Policy.csproj", "{553716F6-ECA4-4AB4-9B0C-5BA0A6E6BD2A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.Scanner", "src\Guardian.Scanner\Guardian.Scanner.csproj", "{7CBE0CEF-22E4-4152-AC80-BD5BBA41D29C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.Signatures", "src\Guardian.Signatures\Guardian.Signatures.csproj", "{7F258ECB-210B-4703-8505-93745FEE5043}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.Quarantine", "src\Guardian.Quarantine\Guardian.Quarantine.csproj", "{80EBA0AE-74DA-45DC-914C-180A2BE26C59}"
 EndProject
@@ -42,6 +40,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.IntegrationTests", "tests\Guardian.IntegrationTests\Guardian.IntegrationTests.csproj", "{C8453F72-D6F3-4098-8AE4-DB549E5EFC42}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.SecurityTests", "tests\Guardian.SecurityTests\Guardian.SecurityTests.csproj", "{C10387B4-95F3-4DF6-B0A3-8F5FF30E14AB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Guardian.Signatures", "Guardian.Signatures", "{FDEFE465-F1BA-4E4F-A05C-CB5BCC08E58B}"
+	ProjectSection(SolutionItems) = preProject
+		InMemorySignatureProvider.cs = InMemorySignatureProvider.cs
+		Sha256Format.cs = Sha256Format.cs
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -101,18 +105,6 @@ Global
 		{7CBE0CEF-22E4-4152-AC80-BD5BBA41D29C}.Release|x64.Build.0 = Release|Any CPU
 		{7CBE0CEF-22E4-4152-AC80-BD5BBA41D29C}.Release|x86.ActiveCfg = Release|Any CPU
 		{7CBE0CEF-22E4-4152-AC80-BD5BBA41D29C}.Release|x86.Build.0 = Release|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Debug|x64.Build.0 = Debug|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Debug|x86.Build.0 = Debug|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Release|x64.ActiveCfg = Release|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Release|x64.Build.0 = Release|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Release|x86.ActiveCfg = Release|Any CPU
-		{7F258ECB-210B-4703-8505-93745FEE5043}.Release|x86.Build.0 = Release|Any CPU
 		{80EBA0AE-74DA-45DC-914C-180A2BE26C59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{80EBA0AE-74DA-45DC-914C-180A2BE26C59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{80EBA0AE-74DA-45DC-914C-180A2BE26C59}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -278,7 +270,6 @@ Global
 		{71D769F8-4DA1-4ED1-8D8D-EE8CF7CA481D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{553716F6-ECA4-4AB4-9B0C-5BA0A6E6BD2A} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{7CBE0CEF-22E4-4152-AC80-BD5BBA41D29C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-		{7F258ECB-210B-4703-8505-93745FEE5043} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{80EBA0AE-74DA-45DC-914C-180A2BE26C59} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{08CCC4B5-9527-461F-A140-C0F421BAF4EE} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{39AF5D49-BA99-452C-80D6-482CFFBFE5DB} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
@@ -292,5 +283,9 @@ Global
 		{7B4BDB8D-E9B9-40D6-A590-A3AC1CD82AF3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C8453F72-D6F3-4098-8AE4-DB549E5EFC42} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C10387B4-95F3-4DF6-B0A3-8F5FF30E14AB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{FDEFE465-F1BA-4E4F-A05C-CB5BCC08E58B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {69DC7106-D057-4895-BF49-EC2894811C53}
 	EndGlobalSection
 EndGlobal

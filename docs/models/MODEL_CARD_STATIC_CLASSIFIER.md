@@ -1,54 +1,31 @@
-# Fiche de modèle (Model Card) — Classifieur Statique de Menaces PE
+# Fiche descriptive — classifieur statique Guardian
 
-**Modèle :** `guardian-classifier-gbt`  
-**Version :** `v1.4.0-tree-ensemble`  
-**Auteur / Responsable :** Florent (Développeur IA, Guardian)  
-**Date d'évaluation :** 2026-11-25  
-**Type d'architecture :** Gradient Boosted Decision Trees calibré (9 règles composites, seuils probabilistes & Platt Scaling)  
-**Format :** Binaire C# managé / Export ONNX compatible  
-**Licence et utilisation :** Moteur interne de sécurité Guardian  
+**Identifiant :** `guardian-static-rules`  
+**Version :** `v1.5.0-static-rules`  
+**Type :** moteur de règles heuristiques pondérées, écrit à la main  
+**État :** expérimental; aucune évaluation quantitative reproductible publiée
 
----
+## Usage prévu
 
-## 1. Description et Intention
-Le modèle évalue un fichier exécutable Windows (PE32 / PE32+) ou script sans exécuter l'échantillon. À partir de caractéristiques d'entropie, de structure d'en-têtes PE, d'appels d'API sensibles d'injection mémoire et de présence de certificats numériques, il estime la probabilité a posteriori qu'un échantillon soit malveillant.
+Produire un signal de triage à partir de caractéristiques statiques fournies par `FileFeatureVector`. Le moteur n'exécute pas les fichiers et n'a pas d'autorité de remédiation. `Guardian.Policy` doit prendre toute décision d'action.
 
-### Entrées
-Un vecteur `FileFeatureVector` contenant :
-- `ShannonEntropy` (0.0 à 8.0)
-- `MaxSectionEntropy` (0.0 à 8.0)
-- `SectionCount` & `ExecutableSectionCount`
-- `AnomalousSectionNameCount` & `IsPackedOrObfuscated`
-- `SuspiciousApiCallCount` (VirtualAlloc, WriteProcessMemory, SetWindowsHookEx, etc.)
-- `HasValidDigitalSignature` (Authenticode)
-- `SuspiciousStringRatio` & `ByteDistributionVariance`
+## Fonctionnement réel
 
-### Sorties
-- Verdict : `Clean`, `Suspicious`, `Malicious`, `Inconclusive`, `Error`
-- Probabilité brute et probabilité calibrée (Platt Scaling)
-- Score de confiance [0.50, 0.99]
-- Facteurs explicatifs contributeurs (SHAP-like attribution)
+`TreeBasedMalwareClassifier` évalue sept règles déterministes sur les entropies, certains indicateurs de sections PE, les chaînes ressemblant à des noms d'API, l'indicateur de packer et la variance des octets. Il additionne leurs contributions et applique une sigmoïde. `ProbabilityCalibrator` applique ensuite une seconde sigmoïde avec des paramètres provisoires non calibrés sur un jeu de données livré. Une signature Authenticode ne modifie pas ce score.
 
----
+Il ne s'agit pas de Gradient Boosting, de Random Forest, de ML.NET ou d'un modèle ONNX. Les champs de confiance sont des scores heuristiques, pas des intervalles statistiques ni des probabilités certifiées.
 
-## 2. Métriques de Performance et Validation
+## Limites des entrées
 
-Évaluation réalisée sur un corpus de test de référence (10 000 échantillons étiquetés équilibrés 50/50) :
+- L'extracteur PE actuel ne valide pas Authenticode. Il laisse `HasValidDigitalSignature` à `false` et ne peut donc pas conclure sur la confiance d'un éditeur.
+- La recherche d'API inspecte des chaînes ASCII dans le fichier entier; elle ne lit pas la table des imports et ne prouve pas qu'une API est appelée.
+- Les caractéristiques `HasTlsCallback`, `HasResources` et `HasDebugInfo` ne sont pas encore analysées par l'extracteur.
+- Une haute entropie, des noms de section atypiques ou des API sensibles peuvent apparaître dans des logiciels légitimes.
+- Les fichiers non PE ne bénéficient pas d'une analyse sémantique propre à leur format.
+- L'analyse statique ne détecte pas toutes les menaces et ne prouve pas l'innocuité d'un résultat `Clean`.
 
-| Métrique | Seuil minimal exigé (Gate) | Résultat obtenu | Statut |
-|---|---|---|---|
-| **Exactitude (Accuracy)** | ≥ 90.0 % | **96.5 %** | Conforme |
-| **Précision (Precision)** | ≥ 88.0 % | **95.8 %** | Conforme |
-| **Rappel (Recall / Sensibilité)** | ≥ 88.0 % | **97.1 %** | Conforme |
-| **Score F1** | ≥ 88.0 % | **96.4 %** | Conforme |
-| **Taux de Faux Positifs (FPR)** | ≤ 3.0 % | **1.5 %** | Conforme |
-| **Score de Brier (Calibration)** | ≤ 0.12 | **0.042** | Conforme |
-| **Latence moyenne d'inférence** | ≤ 10 ms | **1.2 ms** | Conforme |
+## Évaluation et déploiement
 
----
+Les métriques chiffrées précédemment associées à ce classifieur ont été retirées faute d'artefacts reproductibles. Le registre expose des valeurs nulles comme champs numériques obligatoires du contrat, mais elles ne signifient pas « 0 % mesuré »; l'architecture indique explicitement « non évalué ». La vérification d'intégrité retourne `false`, car aucun modèle signé n'est embarqué.
 
-## 3. Garde-fous et Limites Méthodologiques
-1. **Pas d'autorité d'exécution :** Le modèle n'a pas accès au shell, ne supprime rien et ne place rien en quarantaine directement.
-2. **Gouvernance par politique :** Toutes les recommandations du modèle sont soumises aux règles de `Guardian.Policy`.
-3. **Composants système Windows :** Un binaire identifié comme composant système Windows ne peut jamais être remédié automatiquement sur le seul verdict du modèle ; une confirmation humaine est obligatoire.
-4. **Analyses dynamiques :** Pour les malwares polymorphes sophistiqués à déchiffrement retardé, l'analyse statique peut afficher `Suspicious` ou `Inconclusive` et recommander une analyse dans la sandbox isolée d'Iness.
+Avant tout usage comme barrière de sécurité, il faut publier un corpus autorisé, les étiquettes, les scripts, les versions, les résultats bruts, les erreurs par classe et la calibration. Voir [le rapport d'évaluation](../Guardian_AI_Evaluation_Report.md).

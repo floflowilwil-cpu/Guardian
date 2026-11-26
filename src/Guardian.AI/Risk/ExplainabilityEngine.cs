@@ -3,8 +3,8 @@ using Guardian.Contracts.AI.Models;
 namespace Guardian.AI.Risk;
 
 /// <summary>
-/// Moteur d'explicabilité (SHAP-like attribution) identifiant les facteurs déterminants d'une décision IA.
-/// Garantit la transparence et la justification de chaque détection conformément aux exigences de Guardian.
+/// Produit des explications heuristiques lisibles à partir des caractéristiques et scores fournis.
+/// Ces facteurs ne sont pas des valeurs SHAP ni une décomposition mathématique exacte du score final.
 /// </summary>
 public sealed class ExplainabilityEngine
 {
@@ -69,29 +69,17 @@ public sealed class ExplainabilityEngine
             });
         }
 
-        // 4. Signature numérique authenticode
+        // 4. La signature est un élément de contexte, pas une preuve d'innocuité.
         if (features.HasValidDigitalSignature)
         {
             factors.Add(new ContributingFactor
             {
-                Name = "Signature numérique présente",
+                Name = "Signature déclarée valide (contexte)",
                 Weight = 0.30,
-                ScoreContribution = -0.28,
+                ScoreContribution = 0.0,
                 RawValue = 1.0,
-                Impact = FactorImpact.DecreasesRisk,
-                Explanation = "Le binaire dispose d'un certificat numérique valide, réduisant significativement la probabilité de malveillance inconnue."
-            });
-        }
-        else if (features.HasPeHeader)
-        {
-            factors.Add(new ContributingFactor
-            {
-                Name = "Absence de signature numérique",
-                Weight = 0.10,
-                ScoreContribution = 0.08,
-                RawValue = 0.0,
-                Impact = FactorImpact.IncreasesRisk,
-                Explanation = "Le fichier exécutable ne dispose pas d'une signature numérique vérifiée."
+                Impact = FactorImpact.Neutral,
+                Explanation = "Une signature a été déclarée valide en amont; l'extracteur actuel ne la vérifie pas et cette information ne réduit pas le score du classifieur."
             });
         }
 
@@ -123,7 +111,7 @@ public sealed class ExplainabilityEngine
             });
         }
 
-        // Tri par ordre d'impact décroissant
+        // Tri par magnitude du facteur heuristique, pas par attribution de modèle.
         return factors.OrderByDescending(f => Math.Abs(f.ScoreContribution)).ToList();
     }
 
@@ -191,12 +179,12 @@ public sealed class ExplainabilityEngine
         {
             factors.Add(new ContributingFactor
             {
-                Name = "Signature numérique de confiance",
+                Name = "Signature numérique vérifiée (contexte)",
                 Weight = 0.25,
-                ScoreContribution = -0.25,
+                ScoreContribution = 0.0,
                 RawValue = 1.0,
-                Impact = FactorImpact.DecreasesRisk,
-                Explanation = "L'exécutable possède une signature Authenticode valide d'un éditeur reconnu."
+                Impact = FactorImpact.Neutral,
+                Explanation = "Une signature a été déclarée valide en amont. Cela ne réduit pas, à lui seul, les signaux de menace."
             });
         }
 
@@ -204,12 +192,12 @@ public sealed class ExplainabilityEngine
         {
             factors.Add(new ContributingFactor
             {
-                Name = "Composant système Windows légitime",
+                Name = "Composant système (contexte)",
                 Weight = 0.35,
-                ScoreContribution = -0.35,
+                ScoreContribution = 0.0,
                 RawValue = 1.0,
-                Impact = FactorImpact.DecreasesRisk,
-                Explanation = "Le binaire est catalogué comme binaire système intègre."
+                Impact = FactorImpact.Neutral,
+                Explanation = "Le contexte système est conservé pour exiger une confirmation humaine si une remédiation est envisagée."
             });
         }
 

@@ -8,13 +8,13 @@ using Guardian.Contracts.AI.Models;
 namespace Guardian.AI.Classification;
 
 /// <summary>
-/// Implémentation principale du classifieur de menaces IA (IThreatClassifier).
-/// Intègre l'extraction de caractéristiques, le modèle ensembliste, la calibration et l'explicabilité.
+/// Orchestrateur de classification de menaces (IThreatClassifier).
+/// Intègre extraction statique, règles heuristiques, anomalie, calibration et explications.
 /// </summary>
 public sealed class ThreatClassifier : IThreatClassifier
 {
     private readonly PeFeatureExtractor _extractor;
-    private readonly TreeBasedMalwareClassifier _classifier;
+    private readonly IStaticMalwareModel _classifier;
     private readonly ProbabilityCalibrator _calibrator;
     private readonly ExplainabilityEngine _explainer;
     private readonly IsolationForestAnomalyDetector _anomalyDetector;
@@ -26,7 +26,7 @@ public sealed class ThreatClassifier : IThreatClassifier
 
     public ThreatClassifier(
         PeFeatureExtractor? extractor = null,
-        TreeBasedMalwareClassifier? classifier = null,
+        IStaticMalwareModel? classifier = null,
         ProbabilityCalibrator? calibrator = null,
         ExplainabilityEngine? explainer = null,
         IsolationForestAnomalyDetector? anomalyDetector = null,
@@ -46,10 +46,12 @@ public sealed class ThreatClassifier : IThreatClassifier
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(features);
         var stopwatch = Stopwatch.StartNew();
 
         try
         {
+            ValidateFeatures(features);
             // 1. Contrôle de sécurité contre les entrées adversariales si le garde est configuré
             if (_securityGuard != null)
             {
@@ -64,7 +66,7 @@ public sealed class ThreatClassifier : IThreatClassifier
                         Confidence = securityCheck.RiskConfidence,
                         AnomalyScore = 0.95,
                         ThreatFamily = "Adversarial.EvasionAttempt",
-                        ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
+                        ModelVersion = _classifier.ModelVersion,
                         LatencyMs = stopwatch.Elapsed.TotalMilliseconds,
                         ContributingFactors =
                         [
@@ -96,7 +98,6 @@ public sealed class ThreatClassifier : IThreatClassifier
                 features.ShannonEntropy,
                 features.SectionCount,
                 features.SuspiciousApiCallCount,
-                features.HasValidDigitalSignature ? 1.0 : 0.0,
                 features.IsPackedOrObfuscated ? 1.0 : 0.0
             ];
 
@@ -148,13 +149,17 @@ public sealed class ThreatClassifier : IThreatClassifier
                 Confidence = confidence,
                 AnomalyScore = anomalyResult.AnomalyScore,
                 ThreatFamily = threatFamily,
-                ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
+                ModelVersion = _classifier.ModelVersion,
                 LatencyMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
                 ContributingFactors = factors,
                 Limitations = limitations
             };
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
         {
             stopwatch.Stop();
             return new ThreatClassificationResult
@@ -165,10 +170,10 @@ public sealed class ThreatClassifier : IThreatClassifier
                 Confidence = 0.0,
                 AnomalyScore = 0.0,
                 ThreatFamily = null,
-                ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
+                ModelVersion = _classifier.ModelVersion,
                 LatencyMs = stopwatch.Elapsed.TotalMilliseconds,
                 ContributingFactors = [],
-                Limitations = [$"Erreur lors de l'inférence : {ex.Message}"]
+                Limitations = ["L'inférence a échoué; aucun verdict de sécurité fiable n'est disponible."]
             };
         }
     }
@@ -195,10 +200,14 @@ public sealed class ThreatClassifier : IThreatClassifier
                 Confidence = 0.0,
                 ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
                 ContributingFactors = [],
-                Limitations = [$"Fichier introuvable sur le disque : {filePath}"]
+                Limitations = ["Fichier introuvable; aucun verdict de sécurité n'est disponible."]
             };
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
         {
             return new ThreatClassificationResult
             {
@@ -208,8 +217,30 @@ public sealed class ThreatClassifier : IThreatClassifier
                 Confidence = 0.0,
                 ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
                 ContributingFactors = [],
-                Limitations = [$"Échec d'extraction des caractéristiques : {ex.Message}"]
+                Limitations = ["L'extraction des caractéristiques a échoué; aucun verdict de sécurité n'est disponible."]
             };
         }
     }
+
+    private static void ValidateFeatures(FileFeatureVector features)
+    {
+        if (features.FileSizeBytes < 0 || features.SectionCount < 0 || features.ExecutableSectionCount < 0 ||
+            features.AnomalousSectionNameCount < 0 || features.ImportedLibrariesCount < 0 ||
+            features.ImportedFunctionsCount < 0 || features.SuspiciousApiCallCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(features), "Les tailles et compteurs doivent être positifs ou nuls.");
+        }
+
+        if (!IsInRange(features.ShannonEntropy, 0.0, 8.0) ||
+            !IsInRange(features.MaxSectionEntropy, 0.0, 8.0) ||
+            !IsInRange(features.SuspiciousStringRatio, 0.0, 1.0) ||
+            !double.IsFinite(features.ByteDistributionVariance) || features.ByteDistributionVariance < 0.0 ||
+            features.CustomFeatures.Any(pair => !double.IsFinite(pair.Value)))
+        {
+            throw new ArgumentOutOfRangeException(nameof(features), "Les caractéristiques numériques doivent être finies et dans leurs plages documentées.");
+        }
+    }
+
+    private static bool IsInRange(double value, double minimum, double maximum) =>
+        double.IsFinite(value) && value >= minimum && value <= maximum;
 }

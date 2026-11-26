@@ -16,8 +16,8 @@ public sealed class AssistantViewModel : ObservableObject, IPage
     {
         _client = client;
         Messages.Add(new ChatMessage("Bonjour ! Je suis Guardian IA. Comment puis-je vous aider ?", false));
-        SendCommand = new RelayCommand(async () => await SendAsync(Input), () => !_busy && !string.IsNullOrWhiteSpace(Input));
-        SuggestCommand = new RelayCommand(async p =>
+        SendCommand = new AsyncRelayCommand(() => SendAsync(Input), () => !_busy && !string.IsNullOrWhiteSpace(Input));
+        SuggestCommand = new AsyncRelayCommand(async p =>
         {
             if (p is string text)
             {

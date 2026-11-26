@@ -1,0 +1,101 @@
+<UserControl x:Class="Guardian.Desktop.Views.ThreatsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Centre des menaces" Style="{StaticResource PageTitle}"/>
+
+        <UniformGrid Grid.Row="1" Columns="3">
+            <Border Style="{StaticResource Card}" Margin="0,0,10,0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE7BA;" Style="{StaticResource Glyph}" FontSize="22" Foreground="{DynamicResource DangerBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Blocked}" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Menaces bloquées" Style="{StaticResource MutedText}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="5,0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE72E;" Style="{StaticResource Glyph}" FontSize="22" Foreground="{DynamicResource WarningBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding InQuarantine}" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="En quarantaine" Style="{StaticResource MutedText}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="10,0,0,0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE9D9;" Style="{StaticResource Glyph}" FontSize="22" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Events}" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Événements" Style="{StaticResource MutedText}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <TextBlock Grid.Row="2" Text="Détails de la menace sélectionnée" FontWeight="SemiBold" Margin="0,22,0,10"/>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}" Padding="6" Margin="0,0,10,0" VerticalAlignment="Top">
+                <Grid>
+                    <ListBox Style="{StaticResource PlainListBox}" ItemsSource="{Binding Threats}"
+                             SelectedItem="{Binding Selected, Mode=TwoWay}" MaxHeight="260">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding DetectedAt, StringFormat='dd/MM/yyyy HH:mm'}" Style="{StaticResource MutedText}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" VerticalAlignment="Top"
+                    Visibility="{Binding Selected, Converter={StaticResource NullToCollapsed}}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="64" Height="64" CornerRadius="10" Background="{DynamicResource CardAltBrush}">
+                            <TextBlock Text="&#xE7BA;" Style="{StaticResource Glyph}" FontSize="30"
+                                       Foreground="{Binding Selected.Risk, Converter={StaticResource StateToBrush}}"
+                                       HorizontalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Selected.Name}" FontWeight="SemiBold" FontSize="15"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="Niveau de risque : " Style="{StaticResource MutedText}"/>
+                                <TextBlock Text="{Binding RiskText}" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{Binding Selected.Risk, Converter={StaticResource StateToBrush}}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Selected.DetectedAt, StringFormat='Détecté le : dd/MM/yyyy - HH:mm'}" Style="{StaticResource MutedText}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding ShowDetails, Converter={StaticResource BoolToVisibility}}" Margin="0,14,0,0">
+                        <TextBlock Text="{Binding Selected.Path}" FontSize="12"/>
+                        <TextBlock Text="{Binding Selected.Behavior}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Style="{StaticResource PrimaryButton}" Content="Mettre en quarantaine" Command="{Binding QuarantineCommand}"/>
+                        <Button Style="{StaticResource SecondaryButton}" Content="Voir les détails" Command="{Binding ToggleDetailsCommand}" Margin="10,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Message}" Style="{StaticResource MutedText}" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" VerticalAlignment="Top"
+                    Visibility="{Binding Selected, Converter={StaticResource NullToVisible}}">
+                <TextBlock Text="Aucune menace à afficher." Style="{StaticResource MutedText}" FontSize="13"/>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

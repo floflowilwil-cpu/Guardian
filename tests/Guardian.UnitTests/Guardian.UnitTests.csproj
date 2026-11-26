@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Guardian.Scanner\Guardian.Scanner.csproj" />
+    <ProjectReference Include="..\..\src\Guardian.Signatures\Guardian.Signatures.csproj" />
   </ItemGroup>
 
 </Project>

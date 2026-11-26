@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Guardian.Desktop.Infrastructure;
@@ -11,16 +11,20 @@ public sealed class NavItem : ObservableObject
 {
     private bool _isSelected;
 
-    public NavItem(string title, string glyph, IPage page)
+    public NavItem(string title, string glyph, string iconColor, IPage page)
     {
         Title = title;
         Glyph = glyph;
+        IconColor = iconColor;
         Page = page;
     }
 
     public string Title { get; }
 
     public string Glyph { get; }
+
+    /// <summary>Couleur de l'icône de l'onglet (ex. "#38BDF8").</summary>
+    public string IconColor { get; }
 
     public IPage Page { get; }
 
@@ -43,16 +47,16 @@ public sealed class MainViewModel : ObservableObject
 
         Items =
         [
-            new("Accueil", "", dashboard),
-            new("Analyse", "", ScanPage),
-            new("Protection", "", new ProtectionViewModel()),
-            new("Menaces", "", new ThreatsViewModel(client)),
-            new("Quarantaine", "", new QuarantineViewModel(client)),
-            new("Réseau", "", new NetworkViewModel()),
-            new("Système", "", new PlaceholderViewModel("Surveillance système")),
-            new("Rapports", "", new PlaceholderViewModel("Historique et rapports")),
-            new("IA Assistant", "", new AssistantViewModel(client)),
-            new("Paramètres", "", new SettingsViewModel()),
+            new("Accueil", "\uE80F", "#38BDF8", dashboard),
+            new("Analyse", "\uE721", "#A78BFA", ScanPage),
+            new("Protection", "\uEA18", "#34D399", new ProtectionViewModel()),
+            new("Menaces", "\uE7BA", "#FBBF24", new ThreatsViewModel(client)),
+            new("Quarantaine", "\uE72E", "#FB923C", new QuarantineViewModel(client)),
+            new("Réseau", "\uE774", "#22D3EE", new NetworkViewModel()),
+            new("Système", "\uE770", "#60A5FA", new PlaceholderViewModel("Surveillance système")),
+            new("Rapports", "\uE9D9", "#F472B6", new PlaceholderViewModel("Historique et rapports")),
+            new("IA Assistant", "\uE8BD", "#C084FC", new AssistantViewModel(client)),
+            new("Paramètres", "\uE713", "#38BDF8", new SettingsViewModel()),
         ];
 
         NavigateCommand = new RelayCommand(p =>

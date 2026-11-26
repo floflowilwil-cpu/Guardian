@@ -14,7 +14,7 @@ namespace Guardian.AI.Classification;
 public sealed class ThreatClassifier : IThreatClassifier
 {
     private readonly PeFeatureExtractor _extractor;
-    private readonly TreeBasedMalwareClassifier _classifier;
+    private readonly IStaticMalwareModel _classifier;
     private readonly ProbabilityCalibrator _calibrator;
     private readonly ExplainabilityEngine _explainer;
     private readonly IsolationForestAnomalyDetector _anomalyDetector;
@@ -26,7 +26,7 @@ public sealed class ThreatClassifier : IThreatClassifier
 
     public ThreatClassifier(
         PeFeatureExtractor? extractor = null,
-        TreeBasedMalwareClassifier? classifier = null,
+        IStaticMalwareModel? classifier = null,
         ProbabilityCalibrator? calibrator = null,
         ExplainabilityEngine? explainer = null,
         IsolationForestAnomalyDetector? anomalyDetector = null,
@@ -66,7 +66,7 @@ public sealed class ThreatClassifier : IThreatClassifier
                         Confidence = securityCheck.RiskConfidence,
                         AnomalyScore = 0.95,
                         ThreatFamily = "Adversarial.EvasionAttempt",
-                        ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
+                        ModelVersion = _classifier.ModelVersion,
                         LatencyMs = stopwatch.Elapsed.TotalMilliseconds,
                         ContributingFactors =
                         [
@@ -149,7 +149,7 @@ public sealed class ThreatClassifier : IThreatClassifier
                 Confidence = confidence,
                 AnomalyScore = anomalyResult.AnomalyScore,
                 ThreatFamily = threatFamily,
-                ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
+                ModelVersion = _classifier.ModelVersion,
                 LatencyMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
                 ContributingFactors = factors,
                 Limitations = limitations
@@ -170,7 +170,7 @@ public sealed class ThreatClassifier : IThreatClassifier
                 Confidence = 0.0,
                 AnomalyScore = 0.0,
                 ThreatFamily = null,
-                ModelVersion = TreeBasedMalwareClassifier.DefaultModelVersion,
+                ModelVersion = _classifier.ModelVersion,
                 LatencyMs = stopwatch.Elapsed.TotalMilliseconds,
                 ContributingFactors = [],
                 Limitations = ["L'inférence a échoué; aucun verdict de sécurité fiable n'est disponible."]

@@ -67,7 +67,11 @@ public sealed class MainViewModel : ObservableObject
         _selected.IsSelected = true;
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _timer.Tick += async (_, _) => await RefreshAsync();
+        _timer.Tick += async (_, _) =>
+        {
+            try { await RefreshAsync(); }
+            catch (Exception ex) { AppLog.Write(ex, "Actualisation périodique"); }
+        };
         _timer.Start();
         _ = RefreshAsync();
     }
@@ -133,8 +137,13 @@ public sealed class MainViewModel : ObservableObject
 
             foreach (var item in Items)
             {
-                item.Page.Apply(snapshot);
+                try { item.Page.Apply(snapshot); }
+                catch (Exception ex) { AppLog.Write(ex, $"Mise à jour de la page {item.Title}"); }
             }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Actualisation des données Guardian");
         }
         finally
         {

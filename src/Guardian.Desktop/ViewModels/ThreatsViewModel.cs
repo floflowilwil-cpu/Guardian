@@ -19,7 +19,7 @@ public sealed class ThreatsViewModel : ObservableObject, IPage
     public ThreatsViewModel(IGuardianClient client)
     {
         _client = client;
-        QuarantineCommand = new RelayCommand(async () => await QuarantineAsync(), () => Selected is not null);
+        QuarantineCommand = new AsyncRelayCommand(QuarantineAsync, () => Selected is not null);
         ToggleDetailsCommand = new RelayCommand(() => ShowDetails = !ShowDetails, () => Selected is not null);
     }
 

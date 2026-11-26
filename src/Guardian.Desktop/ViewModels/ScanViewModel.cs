@@ -27,7 +27,7 @@ public sealed class ScanViewModel : ObservableObject, IPage
                 Kind = k;
             }
         });
-        StartCommand = new RelayCommand(async () => await StartAsync(), () => !IsScanning);
+        StartCommand = new AsyncRelayCommand(StartAsync, () => !IsScanning);
         CancelCommand = new RelayCommand(() => _cts?.Cancel(), () => IsScanning);
     }
 

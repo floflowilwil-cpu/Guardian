@@ -3,7 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:Guardian.Desktop.Infrastructure">
     <StackPanel>
-        <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitle}"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+            <TextBlock Text="&#xE946;" Style="{StaticResource Glyph}" FontSize="28" Foreground="#60A5FA" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
+        </StackPanel>
         <Border Style="{StaticResource Card}">
             <TextBlock Text="{loc:Loc 'Cette page sera disponible dans une prochaine version.'}" Style="{StaticResource MutedText}" FontSize="13"/>
         </Border>

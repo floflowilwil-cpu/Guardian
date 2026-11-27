@@ -9,6 +9,7 @@
                 <!-- Les couleurs (Colors.Dark/Light.xaml) sont injectées au démarrage par ThemeService. -->
                 <ResourceDictionary Source="Themes/Controls.xaml"/>
                 <ResourceDictionary Source="Themes/Art.xaml"/>
+                <ResourceDictionary Source="Themes/ScrollBars.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <infra:StateToBrushConverter x:Key="StateToBrush"/>

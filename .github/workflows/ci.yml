@@ -1,29 +1,36 @@
-﻿name: Guardian CI
+name: Guardian CI
 
 on:
   push:
     branches:
       - main
+      - develop
   pull_request:
     branches:
       - main
+      - develop
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
     name: Build and test
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
+      - name: Setup .NET SDK (version from global.json)
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.x'
+          global-json-file: global.json
 
       - name: Display .NET version
         run: dotnet --version
@@ -36,3 +43,12 @@ jobs:
 
       - name: Run tests
         run: dotnet test Guardian.sln --configuration Release --no-build --no-restore
+
+      - name: Check vulnerable packages
+        shell: pwsh
+        run: |
+          $out = dotnet list Guardian.sln package --vulnerable --include-transitive 2>&1 | Out-String
+          Write-Host $out
+          if ($out -match 'has the following vulnerable packages') {
+            throw 'Vulnerable NuGet packages detected.'
+          }

@@ -1,6 +1,18 @@
+using Guardian.Contracts.AI.Models;
 using Guardian.Contracts.Health;
+using Guardian.Contracts.Heuristics;
+using Guardian.Contracts.Ipc;
+using Guardian.Contracts.Scanning;
+using Guardian.Contracts.Signatures;
+using Guardian.Scanner;
+using Guardian.Scanner.Heuristics;
 using Guardian.Service.Configuration;
 using Guardian.Service.Health;
+using Guardian.Service.Ipc;
+using Guardian.Service.Scanning;
+using Guardian.Service.Security;
+using Guardian.Service.Watchdog;
+using Guardian.Signatures;
 using Guardian.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +45,8 @@ public static class GuardianServiceRegistrationExtensions
     }
 
     /// <summary>
-    /// Enregistre les options validées, les adaptateurs Windows, le service de santé et l'hôte résident Guardian.
+    /// Enregistre les options validées, les adaptateurs Windows, le service de santé,
+    /// le watchdog anti-boucle, le moniteur d'auto-intégrité, le coordinateur de scans et le serveur IPC.
     /// </summary>
     /// <param name="services">Collection de services cible.</param>
     /// <param name="configuration">Configuration applicative source.</param>
@@ -69,7 +82,37 @@ public static class GuardianServiceRegistrationExtensions
         services.AddSingleton<GuardianHealthService>();
         services.AddSingleton<IGuardianHealthService>(sp => sp.GetRequiredService<GuardianHealthService>());
 
+        services.AddSingleton<WatchdogTracker>();
+        services.AddSingleton<ISelfIntegrityMonitor, SelfIntegrityMonitor>();
+
+        services.TryAddSingleton<ISignatureProvider>(_ => new InMemorySignatureProvider(
+        [
+            new SignatureMatch
+            {
+                SignatureId = "EICAR-STANDARD-TEST",
+                Sha256 = "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f",
+                ThreatName = "EICAR-Test-File",
+                ThreatFamily = "Test",
+                Severity = SignalSeverity.High
+            }
+        ]));
+        services.TryAddSingleton<IHeuristicAnalyzer, HeuristicAnalyzer>();
+        services.TryAddSingleton<IScanTargetResolver, DefaultScanTargetResolver>();
+        services.TryAddSingleton<IFileScanner, FileScanner>();
+        services.TryAddSingleton<IScanOrchestrator, ScanOrchestrator>();
+        services.AddSingleton<IScanExecutionCoordinator, ScanExecutionCoordinator>();
+
+        services.AddSingleton<IpcReplayGuard>();
+        services.AddSingleton<IIpcRequestDispatcher, IpcRequestDispatcher>();
+
+        services.AddSingleton<NamedPipeIpcServer>();
+        services.AddSingleton<IMonitoredComponent>(sp => sp.GetRequiredService<NamedPipeIpcServer>());
+
+        services.AddSingleton<GuardianWatchdogService>();
         services.AddHostedService<GuardianCoreHostWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<NamedPipeIpcServer>());
+        services.AddHostedService(sp => sp.GetRequiredService<GuardianWatchdogService>());
+        services.AddHostedService<SelfIntegrityWorker>();
 
         return services;
     }

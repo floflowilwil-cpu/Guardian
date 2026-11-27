@@ -108,7 +108,7 @@ public sealed class GuardianHealthService : IGuardianHealthService
             }
         }
 
-        foreach (var requiredName in requiredComponents)
+        foreach (var requiredName in requiredComponents.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (!_reports.ContainsKey(requiredName))
             {

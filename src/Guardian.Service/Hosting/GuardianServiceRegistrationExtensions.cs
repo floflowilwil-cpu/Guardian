@@ -1,0 +1,76 @@
+using Guardian.Contracts.Health;
+using Guardian.Service.Configuration;
+using Guardian.Service.Health;
+using Guardian.Windows;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+
+namespace Guardian.Service.Hosting;
+
+/// <summary>
+/// Méthodes d'extension pour enregistrer le cœur du service Guardian et son intégration Windows Service.
+/// </summary>
+public static class GuardianServiceRegistrationExtensions
+{
+    /// <summary>
+    /// Configure l'hôte pour utiliser le gestionnaire de cycle de vie Windows Service lorsqu'il s'exécute sous le SCM Windows.
+    /// </summary>
+    /// <param name="builder">Constructeur d'application hôte .NET.</param>
+    /// <returns>Le constructeur enrichi.</returns>
+    public static IHostApplicationBuilder UseGuardianWindowsService(this IHostApplicationBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        if (GuardianWindowsServiceLifetime.IsRunningAsWindowsService())
+        {
+            builder.Services.AddSingleton<IHostLifetime, GuardianWindowsServiceLifetime>();
+        }
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Enregistre les options validées, les adaptateurs Windows, le service de santé et l'hôte résident Guardian.
+    /// </summary>
+    /// <param name="services">Collection de services cible.</param>
+    /// <param name="configuration">Configuration applicative source.</param>
+    /// <returns>La collection de services enrichie.</returns>
+    public static IServiceCollection AddGuardianServiceCore(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IValidateOptions<GuardianServiceOptions>, GuardianServiceOptionsValidator>();
+
+        services.AddOptions<GuardianServiceOptions>()
+            .Bind(configuration.GetSection(GuardianServiceConstants.ConfigurationSectionName))
+            .ValidateOnStart();
+
+        var boundOptions = configuration
+            .GetSection(GuardianServiceConstants.ConfigurationSectionName)
+            .Get<GuardianServiceOptions>() ?? new GuardianServiceOptions();
+
+        services.Configure<HostOptions>(hostOptions =>
+        {
+            if (boundOptions.ShutdownTimeoutSeconds >= 5)
+            {
+                hostOptions.ShutdownTimeout = TimeSpan.FromSeconds(boundOptions.ShutdownTimeoutSeconds);
+            }
+        });
+
+        services.AddGuardianWindowsAdapters();
+
+        services.AddSingleton<GuardianHealthService>();
+        services.AddSingleton<IGuardianHealthService>(sp => sp.GetRequiredService<GuardianHealthService>());
+
+        services.AddHostedService<GuardianCoreHostWorker>();
+
+        return services;
+    }
+}

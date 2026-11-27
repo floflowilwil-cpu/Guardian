@@ -2,7 +2,9 @@ using System.Text.Json;
 using Guardian.Contracts.Common;
 using Guardian.Contracts.Health;
 using Guardian.Contracts.Ipc;
+using Guardian.Contracts.Memory;
 using Guardian.Contracts.Scanning;
+using Guardian.Contracts.System;
 using Guardian.Scanner;
 using Guardian.Service.Configuration;
 using Guardian.Service.Health;
@@ -11,11 +13,18 @@ using Guardian.Service.Scanning;
 using Guardian.Service.Security;
 using Guardian.Service.Watchdog;
 using Guardian.Signatures;
+using Guardian.SystemMonitor;
+using Guardian.SystemMonitor.Configuration;
+using Guardian.SystemMonitor.Detection;
+using Guardian.SystemMonitor.Events;
+using Guardian.SystemMonitor.Sensors;
 using Guardian.Windows.Environment;
+using Guardian.Windows.Memory;
 using Guardian.Windows.Processes;
 using Guardian.Windows.Registry;
 using Guardian.Windows.Security;
 using Guardian.Windows.Services;
+using Guardian.Windows.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -77,13 +86,46 @@ public class IpcRequestDispatcherTests
             var orchestrator = new ScanOrchestrator(scanner, new DefaultScanTargetResolver());
             using var scanCoordinator = new ScanExecutionCoordinator(orchestrator, NullLogger<ScanExecutionCoordinator>.Instance);
 
-            var dispatcher = new IpcRequestDispatcher(
-                healthService,
-                tracker,
-                postureReader,
+            var sysMonOptions = Options.Create(new SystemMonitorOptions
+            {
+                EnableFileSystemWatch = false,
+                EnableMemorySweep = false
+            });
+            var memoryAdapter = new WindowsMemoryAdapter();
+            var eventStore = new BoundedSystemEventStore(sysMonOptions);
+            using var systemMonitor = new SystemMonitorService(
                 new WindowsProcessAdapter(),
                 serviceAdapter,
                 registryAdapter,
+                new WindowsScheduledTaskAdapter(tasksRootOverride: Path.Combine(tempRoot, "no-tasks")),
+                postureReader,
+                new WindowsAuthenticodeVerifier(),
+                memoryAdapter,
+                new WindowsRemovableDriveProvider(),
+                eventStore,
+                new WindowsEtwCapabilityProbe(privilegeInspector),
+                sysMonOptions,
+                timeProvider,
+                NullLogger<SystemMonitorService>.Instance);
+
+            eventStore.Publish(new SystemSecurityEventDto(
+                Guid.NewGuid(),
+                timeProvider.GetUtcNow(),
+                SystemEventCategory.ProcessLifecycle,
+                EventSeverity.Info,
+                "TestSource",
+                Environment.ProcessId,
+                "testhost",
+                null,
+                "Test system event recorded",
+                new Dictionary<string, string>()));
+
+            var dispatcher = new IpcRequestDispatcher(
+                healthService,
+                tracker,
+                systemMonitor,
+                systemMonitor,
+                memoryAdapter,
                 integrityMonitor,
                 scanCoordinator,
                 new IpcReplayGuard(options, timeProvider),
@@ -154,6 +196,33 @@ public class IpcRequestDispatcherTests
 
             Assert.NotNull(finalStatus?.LastCompletedSummary);
             Assert.Equal(1, finalStatus.LastCompletedSummary.FilesScanned);
+
+            var eventsResp = await dispatcher.DispatchAsync(
+                new IpcRequest(
+                    IpcProtocolConstants.ProtocolVersion,
+                    "req-sysevents",
+                    IpcCommandType.GetRecentSystemEvents,
+                    timeProvider.GetUtcNow(),
+                    PayloadJson: JsonSerializer.Serialize(10, JsonOptions)),
+                adminClient);
+            Assert.True(eventsResp.Success);
+            var recentEvents = JsonSerializer.Deserialize<IReadOnlyList<SystemSecurityEventDto>>(eventsResp.PayloadJson!, JsonOptions);
+            Assert.NotNull(recentEvents);
+            Assert.Contains(recentEvents, e => e.Summary == "Test system event recorded");
+
+            var memResp = await dispatcher.DispatchAsync(
+                new IpcRequest(
+                    IpcProtocolConstants.ProtocolVersion,
+                    "req-mem",
+                    IpcCommandType.RunMemoryAnalysis,
+                    timeProvider.GetUtcNow(),
+                    PayloadJson: JsonSerializer.Serialize(Environment.ProcessId, JsonOptions)),
+                adminClient);
+            Assert.True(memResp.Success);
+            var memReports = JsonSerializer.Deserialize<IReadOnlyList<MemoryAnalysisReportDto>>(memResp.PayloadJson!, JsonOptions);
+            Assert.NotNull(memReports);
+            Assert.Single(memReports);
+            Assert.Equal(Environment.ProcessId, memReports[0].ProcessId);
         }
         finally
         {

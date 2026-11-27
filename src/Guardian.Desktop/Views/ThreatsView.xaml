@@ -10,7 +10,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{loc:Loc 'Centre des menaces'}" Style="{StaticResource PageTitle}"/>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+            <TextBlock Text="&#xE7BA;" Style="{StaticResource Glyph}" FontSize="28" Foreground="#FBBF24" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Loc 'Centre des menaces'}" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
+        </StackPanel>
 
         <UniformGrid Grid.Row="1" Columns="3">
             <Border Style="{StaticResource Card}" Margin="0,0,10,0">

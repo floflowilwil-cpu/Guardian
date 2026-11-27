@@ -3,7 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:Guardian.Desktop.Infrastructure">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="680" HorizontalAlignment="Left">
+        <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="420" MaxWidth="680"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel HorizontalAlignment="Stretch">
 
             <!-- Titre avec l'icône Paramètres en bleu -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
@@ -91,5 +96,11 @@
                 </StackPanel>
             </Border>
         </StackPanel>
+
+        <!-- Robot Guardian et sa caisse à outils, à côté des réglages -->
+        <Image Grid.Column="1" Source="/Assets/robot-tools.png" MaxWidth="340" MaxHeight="360"
+               HorizontalAlignment="Center" VerticalAlignment="Top" Margin="24,40,0,0"
+               RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
+        </Grid>
     </ScrollViewer>
 </UserControl>

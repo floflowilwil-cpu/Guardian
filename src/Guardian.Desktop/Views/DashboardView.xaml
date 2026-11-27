@@ -9,7 +9,10 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{loc:Loc 'Vue d\'ensemble'}" Style="{StaticResource PageTitle}"/>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+            <TextBlock Text="&#xE80F;" Style="{StaticResource Glyph}" FontSize="28" Foreground="#38BDF8" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Loc 'Vue d\'ensemble'}" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
+        </StackPanel>
 
         <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
             <!-- Bouclier : la couleur suit l'état réel du service -->

@@ -27,7 +27,10 @@
     <StackPanel>
         <Grid Margin="0,0,0,12">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{loc:Loc 'Centre d\'analyse'}" Style="{StaticResource PageTitle}" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <TextBlock Text="&#xE721;" Style="{StaticResource Glyph}" FontSize="28" Foreground="#A78BFA" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{loc:Loc 'Centre d\'analyse'}" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
+                </StackPanel>
                 <TextBlock Text="{loc:Loc 'Choisissez votre type d\'analyse'}" FontSize="15"/>
             </StackPanel>
             <ContentControl Content="{StaticResource MagnifierArt}" Width="110" Height="110" HorizontalAlignment="Right"/>

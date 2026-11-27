@@ -10,7 +10,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{loc:Loc 'Activité réseau'}" Style="{StaticResource PageTitle}"/>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+            <TextBlock Text="&#xE774;" Style="{StaticResource Glyph}" FontSize="28" Foreground="#22D3EE" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Loc 'Activité réseau'}" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
+        </StackPanel>
 
         <!-- Carte stylisée des connexions -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Height="190">

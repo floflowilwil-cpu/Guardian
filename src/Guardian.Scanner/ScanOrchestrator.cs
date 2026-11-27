@@ -5,12 +5,14 @@ using Guardian.Contracts.Scanning;
 namespace Guardian.Scanner;
 
 /// <summary>
-/// Parcourt les fichiers à analyser, appelle <see cref="IFileScanner"/> pour chacun
-/// et rapporte la progression.
+/// Parcourt les fichiers au fil de l'eau et appelle <see cref="IFileScanner"/> pour chacun.
+/// Un comptage parallèle estime le total : la progression démarre immédiatement et devient
+/// exacte quand le comptage est terminé. Aucune liste complète de chemins n'est gardée en mémoire.
 /// </summary>
 public sealed class ScanOrchestrator : IScanOrchestrator
 {
     private const long ProgressIntervalMs = 100;
+    private const int MaxPercentBeforeCompletion = 99;
 
     private static readonly EnumerationOptions EnumOptions = new()
     {
@@ -39,48 +41,67 @@ public sealed class ScanOrchestrator : IScanOrchestrator
 
         DateTime startedAt = DateTime.UtcNow;
         var clock = Stopwatch.StartNew();
+        IReadOnlyList<string> roots = _targets.ResolveRoots(request);
 
-        List<string> files = CollectFiles(_targets.ResolveRoots(request), cancellationToken);
+        var discovery = new DiscoveryCounter();
+        using var countCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        Task countingTask = Task.Run(() => discovery.Run(roots, countCts.Token), CancellationToken.None);
 
         var findings = new List<FileScanResult>();
         int analysed = 0;
         int skipped = 0;
+        int processed = 0;
+        int lastPercent = 0;
         long lastReportMs = -ProgressIntervalMs;
 
-        for (int i = 0; i < files.Count; i++)
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string path = files[i];
-            FileScanResult result = await _fileScanner.ScanAsync(
-                new FileScanRequest { FilePath = path },
-                cancellationToken);
-
-            if (result.Verdict is ThreatVerdict.Error or ThreatVerdict.Inconclusive)
+            foreach (string path in EnumerateFiles(roots, cancellationToken))
             {
-                skipped++;
-            }
-            else
-            {
-                analysed++;
+                cancellationToken.ThrowIfCancellationRequested();
 
-                if (result.Verdict is ThreatVerdict.Suspicious or ThreatVerdict.Malicious)
+                FileScanResult result = await _fileScanner.ScanAsync(
+                    new FileScanRequest { FilePath = path },
+                    cancellationToken);
+
+                processed++;
+
+                if (result.Verdict is ThreatVerdict.Error or ThreatVerdict.Inconclusive)
                 {
-                    findings.Add(result);
+                    skipped++;
+                }
+                else
+                {
+                    analysed++;
+
+                    if (result.Verdict is ThreatVerdict.Suspicious or ThreatVerdict.Malicious)
+                    {
+                        findings.Add(result);
+                    }
+                }
+
+                long now = clock.ElapsedMilliseconds;
+                if (now - lastReportMs >= ProgressIntervalMs)
+                {
+                    lastReportMs = now;
+
+                    long total = Math.Max(discovery.Discovered, processed);
+                    int percent = (int)Math.Min(MaxPercentBeforeCompletion, processed * 100L / total);
+                    lastPercent = Math.Max(lastPercent, percent);
+                    int totalForReport = (int)Math.Min(int.MaxValue, total);
+
+                    progress?.Report(new ScanProgressInfo(
+                        lastPercent, path, processed, totalForReport, findings.Count));
                 }
             }
-
-            long now = clock.ElapsedMilliseconds;
-            if (now - lastReportMs >= ProgressIntervalMs)
-            {
-                lastReportMs = now;
-                int processed = i + 1;
-                int percent = (int)(processed * 100L / files.Count);
-                progress?.Report(new ScanProgressInfo(percent, path, processed, files.Count, findings.Count));
-            }
+        }
+        finally
+        {
+            await countCts.CancelAsync();
+            await countingTask;
         }
 
-        progress?.Report(new ScanProgressInfo(100, string.Empty, files.Count, files.Count, findings.Count));
+        progress?.Report(new ScanProgressInfo(100, string.Empty, processed, processed, findings.Count));
 
         return new ScanSummary
         {
@@ -93,17 +114,17 @@ public sealed class ScanOrchestrator : IScanOrchestrator
         };
     }
 
-    private static List<string> CollectFiles(IReadOnlyList<string> roots, CancellationToken cancellationToken)
+    private static IEnumerable<string> EnumerateFiles(
+        IReadOnlyList<string> roots,
+        CancellationToken cancellationToken)
     {
-        var files = new List<string>();
-
         foreach (string root in roots)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (File.Exists(root))
             {
-                files.Add(root);
+                yield return root;
                 continue;
             }
 
@@ -112,24 +133,79 @@ public sealed class ScanOrchestrator : IScanOrchestrator
                 continue;
             }
 
-            try
+            IEnumerator<string>? enumerator = OpenEnumerator(root);
+            if (enumerator is null)
             {
-                foreach (string file in Directory.EnumerateFiles(root, "*", EnumOptions))
+                continue;
+            }
+
+            using (enumerator)
+            {
+                while (MoveNextSafely(enumerator))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    files.Add(file);
+                    yield return enumerator.Current;
                 }
             }
-            catch (IOException)
+        }
+    }
+
+    private static IEnumerator<string>? OpenEnumerator(string root)
+    {
+        try
+        {
+            return Directory.EnumerateFiles(root, "*", EnumOptions).GetEnumerator();
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static bool MoveNextSafely(IEnumerator<string> enumerator)
+    {
+        try
+        {
+            return enumerator.MoveNext();
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Compte les fichiers en parallèle du scan, pour estimer le total.</summary>
+    private sealed class DiscoveryCounter
+    {
+        private long _discovered;
+
+        public long Discovered => Interlocked.Read(ref _discovered);
+
+        public void Run(IReadOnlyList<string> roots, CancellationToken cancellationToken)
+        {
+            try
             {
-                // Dossier devenu illisible pendant le parcours : on continue avec les autres.
+                foreach (string _ in EnumerateFiles(roots, cancellationToken))
+                {
+                    Interlocked.Increment(ref _discovered);
+                }
             }
-            catch (UnauthorizedAccessException)
+            catch (OperationCanceledException)
             {
-                // Idem : accès refusé sur une partie de l'arborescence.
+                // Scan terminé ou annulé : le comptage s'arrête.
+            }
+            catch (Exception)
+            {
+                // Le comptage n'est qu'une estimation : il ne doit jamais faire échouer l'analyse.
             }
         }
-
-        return files;
     }
 }

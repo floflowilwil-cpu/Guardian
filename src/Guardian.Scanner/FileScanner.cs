@@ -1,4 +1,5 @@
 using Guardian.Contracts.AI.Models;
+using Guardian.Contracts.Heuristics;
 using Guardian.Contracts.Scanning;
 using Guardian.Contracts.Signatures;
 using Guardian.Scanner.FileTypes;
@@ -7,16 +8,22 @@ using Guardian.Scanner.Hashing;
 namespace Guardian.Scanner;
 
 /// <summary>
-/// Enchaîne les étapes d'analyse d'un fichier : taille, type réel, SHA-256, signatures.
+/// Enchaîne les étapes d'analyse d'un fichier : taille, type réel, SHA-256,
+/// signatures et, si disponible, analyse heuristique.
 /// </summary>
 public sealed class FileScanner : IFileScanner
 {
-    private readonly ISignatureProvider _signatures;
+    /// <summary>Score heuristique à partir duquel un fichier est déclaré suspect.</summary>
+    public const double SuspiciousHeuristicThreshold = 0.60;
 
-    public FileScanner(ISignatureProvider signatures)
+    private readonly ISignatureProvider _signatures;
+    private readonly IHeuristicAnalyzer? _heuristics;
+
+    public FileScanner(ISignatureProvider signatures, IHeuristicAnalyzer? heuristics = null)
     {
         ArgumentNullException.ThrowIfNull(signatures);
         _signatures = signatures;
+        _heuristics = heuristics;
     }
 
     public async Task<FileScanResult> ScanAsync(
@@ -53,6 +60,7 @@ public sealed class FileScanner : IFileScanner
             string sha256 = await FileHasher.ComputeSha256Async(path, cancellationToken);
             SignatureMatch? match = await _signatures.FindBySha256Async(sha256, cancellationToken);
             bool disguised = FileTypeDetector.IsDisguisedExecutable(path, type);
+            HeuristicAnalysisResult? heuristic = await TryAnalyzeAsync(path, cancellationToken);
 
             var reasons = new List<string>();
             ThreatVerdict verdict = ThreatVerdict.Clean;
@@ -63,6 +71,21 @@ public sealed class FileScanner : IFileScanner
                 reasons.Add("Exécutable Windows déguisé : l'extension ne correspond pas au contenu.");
             }
 
+            if (heuristic is not null)
+            {
+                foreach (HeuristicFinding finding in heuristic.Findings)
+                {
+                    reasons.Add($"Heuristique {finding.RuleId} : {finding.Description}");
+                }
+
+                if (heuristic.Score >= SuspiciousHeuristicThreshold)
+                {
+                    verdict = ThreatVerdict.Suspicious;
+                    reasons.Add(
+                        $"Score heuristique élevé : {heuristic.Score:F2} (seuil {SuspiciousHeuristicThreshold:F2}).");
+                }
+            }
+
             if (match is not null)
             {
                 verdict = ThreatVerdict.Malicious;
@@ -71,7 +94,7 @@ public sealed class FileScanner : IFileScanner
 
             if (reasons.Count == 0)
             {
-                reasons.Add("Aucune signature connue ni anomalie de type détectée.");
+                reasons.Add("Aucune signature connue ni anomalie détectée.");
             }
 
             return new FileScanResult
@@ -83,7 +106,9 @@ public sealed class FileScanner : IFileScanner
                 FileSizeBytes = info.Length,
                 DetectedFileType = type.ToString(),
                 IsDisguisedExecutable = disguised,
-                Signature = match
+                Signature = match,
+                HeuristicScore = heuristic?.Score ?? 0.0,
+                HeuristicFindings = heuristic?.Findings ?? Array.Empty<HeuristicFinding>()
             };
         }
         catch (UnauthorizedAccessException)
@@ -97,6 +122,29 @@ public sealed class FileScanner : IFileScanner
         catch (IOException ex)
         {
             return Failure(path, ThreatVerdict.Error, $"Erreur de lecture : {ex.Message}");
+        }
+    }
+
+    private async Task<HeuristicAnalysisResult?> TryAnalyzeAsync(
+        string path,
+        CancellationToken cancellationToken)
+    {
+        if (_heuristics is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await _heuristics.AnalyzeAsync(path, cancellationToken);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
         }
     }
 

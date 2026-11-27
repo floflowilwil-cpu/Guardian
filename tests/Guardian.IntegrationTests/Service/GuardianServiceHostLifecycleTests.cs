@@ -20,7 +20,8 @@ public class GuardianServiceHostLifecycleTests
             ["GuardianService:HeartbeatIntervalSeconds"] = "1",
             ["GuardianService:HeartbeatStaleThresholdSeconds"] = "10",
             ["GuardianService:ShutdownTimeoutSeconds"] = "5",
-            ["GuardianService:DataDirectoryOverride"] = missingDataDir
+            ["GuardianService:DataDirectoryOverride"] = missingDataDir,
+            ["GuardianService:IpcPipeName"] = $"Guardian.Test.Ipc.{Guid.NewGuid():N}"
         });
         builder.Services.AddGuardianServiceCore(builder.Configuration);
 

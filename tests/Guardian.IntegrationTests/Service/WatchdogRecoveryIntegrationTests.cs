@@ -26,7 +26,8 @@ public class WatchdogRecoveryIntegrationTests
             ["GuardianService:WatchdogMaxRestartsInWindow"] = "2",
             ["GuardianService:WatchdogRestartWindowMinutes"] = "10",
             ["GuardianService:ShutdownTimeoutSeconds"] = "5",
-            ["GuardianService:DataDirectoryOverride"] = missingDataDir
+            ["GuardianService:DataDirectoryOverride"] = missingDataDir,
+            ["GuardianService:IpcPipeName"] = $"Guardian.Test.Ipc.{Guid.NewGuid():N}"
         });
         builder.Services.AddGuardianServiceCore(builder.Configuration);
         builder.Services.AddSingleton<IMonitoredComponent>(fakeComponent);
@@ -60,7 +61,9 @@ public class WatchdogRecoveryIntegrationTests
             var afterBreakerHealth = await healthService.GetOverallHealthAsync();
             Assert.Equal(GuardianHealthStatus.Degraded, afterBreakerHealth.OverallStatus);
             Assert.NotNull(afterBreakerHealth.Watchdog);
-            var tracked = Assert.Single(afterBreakerHealth.Watchdog.Components);
+            var tracked = Assert.Single(
+                afterBreakerHealth.Watchdog.Components,
+                c => c.ComponentName == fakeComponent.ComponentName);
             Assert.True(tracked.CircuitBreakerOpen);
             Assert.Equal(2, tracked.RestartsInCurrentWindow);
 

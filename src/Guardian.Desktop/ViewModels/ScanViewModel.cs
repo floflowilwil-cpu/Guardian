@@ -15,6 +15,9 @@ public sealed class ScanViewModel : ObservableObject, IPage
     private string _currentPath = string.Empty;
     private string _message = string.Empty;
     private string? _customPath;
+    private int _filesProcessed;
+    private int _filesTotal;
+    private int _threatsFound;
     private CancellationTokenSource? _cts;
 
     public ScanViewModel(IGuardianClient client)
@@ -28,6 +31,12 @@ public sealed class ScanViewModel : ObservableObject, IPage
             }
         });
         StartCommand = new AsyncRelayCommand(StartAsync, () => !IsScanning);
+        Loc.LanguageChanged += () =>
+        {
+            Raise(nameof(RunningLabel));
+            Raise(nameof(Details));
+            Raise(nameof(CustomLabel));
+        };
         CancelCommand = new RelayCommand(() => _cts?.Cancel(), () => IsScanning);
     }
 
@@ -47,6 +56,7 @@ public sealed class ScanViewModel : ObservableObject, IPage
                 Raise(nameof(IsQuick));
                 Raise(nameof(IsFull));
                 Raise(nameof(IsCustom));
+                Raise(nameof(RunningLabel));
             }
         }
     }
@@ -65,7 +75,37 @@ public sealed class ScanViewModel : ObservableObject, IPage
 
     public string Message { get => _message; private set => Set(ref _message, value); }
 
-    public string CustomLabel => _customPath ?? "Sélectionnez vos dossiers";
+    public string CustomLabel => _customPath ?? Loc.T("Sélectionnez vos dossiers");
+
+    /// <summary>Titre de la carte de progression : indique clairement le type d'analyse en cours.</summary>
+    public string RunningLabel
+    {
+        get
+        {
+            var name = Kind switch
+            {
+                ScanKind.Full => "Analyse complète",
+                ScanKind.Custom => "Analyse personnalisée",
+                _ => "Analyse rapide",
+            };
+
+            return Loc.T(name) + " — " + Loc.T("en cours...");
+        }
+    }
+
+    /// <summary>Compteurs en direct : fichiers analysés et menaces trouvées.</summary>
+    public string Details =>
+        Loc.T("Fichiers analysés") + " : " + _filesProcessed.ToString("N0") + " / " + _filesTotal.ToString("N0")
+        + "   •   " + Loc.T("Menaces") + " : " + _threatsFound;
+
+    /// <summary>Choisit le type d'analyse (utilisé par l'accueil : Analyse rapide / Analyse complète).</summary>
+    public void Prepare(ScanKind kind)
+    {
+        if (!IsScanning)
+        {
+            Kind = kind;
+        }
+    }
 
     public void Apply(GuardianSnapshot snapshot)
     {
@@ -88,23 +128,40 @@ public sealed class ScanViewModel : ObservableObject, IPage
         _cts = new CancellationTokenSource();
         IsScanning = true;
         Percent = 0;
+        CurrentPath = string.Empty;
+        _filesProcessed = _filesTotal = _threatsFound = 0;
+        Raise(nameof(Details));
+        Raise(nameof(RunningLabel));
         Message = string.Empty;
+        var last = new ScanProgress(0, string.Empty);
         try
         {
             var progress = new Progress<ScanProgress>(p =>
             {
+                last = p;
                 Percent = p.Percent;
                 CurrentPath = p.CurrentPath;
+                _filesProcessed = p.FilesProcessed;
+                _filesTotal = p.FilesTotal;
+                _threatsFound = p.ThreatsFound;
+                Raise(nameof(Details));
             });
 
             var accepted = await _client.StartScanAsync(Kind, _customPath, progress, _cts.Token);
             Message = accepted
-                ? "Analyse terminée."
-                : "Impossible de lancer l'analyse : le service Guardian ne répond pas.";
+                ? string.Format(
+                    Loc.T("Analyse terminée : {0} fichier(s) analysé(s), {1} ignoré(s), {2} menace(s)."),
+                    Math.Max(0, last.FilesProcessed - last.FilesSkipped), last.FilesSkipped, last.ThreatsFound)
+                : Loc.T("Impossible de lancer l'analyse : le service Guardian ne répond pas.");
         }
         catch (OperationCanceledException)
         {
-            Message = "Analyse annulée.";
+            Message = Loc.T("Analyse annulée.");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Analyse");
+            Message = string.Format(Loc.T("L'analyse a échoué : {0}"), ex.Message);
         }
         finally
         {

@@ -10,7 +10,7 @@ public sealed class SettingsViewModel : ObservableObject, IPage
     private string _language = "Français";
     private bool _silentMode;
     private bool _offlineMode;
-    private string _enginesSummary = "État des moteurs inconnu";
+    private string _enginesSummary = Loc.T("État des moteurs inconnu");
     private ProtectionState _enginesState = ProtectionState.Unknown;
 
     public SettingsViewModel()
@@ -47,6 +47,7 @@ public sealed class SettingsViewModel : ObservableObject, IPage
         {
             if (Set(ref _language, value))
             {
+                Loc.SetLanguage(value);
                 Save();
             }
         }
@@ -92,11 +93,11 @@ public sealed class SettingsViewModel : ObservableObject, IPage
         EnginesState = s.State;
         EnginesSummary = s.State switch
         {
-            ProtectionState.Healthy => "Tous les moteurs sont opérationnels",
-            ProtectionState.Degraded => "Certains moteurs sont dégradés",
-            ProtectionState.OutOfDate => "Des définitions sont obsolètes",
-            ProtectionState.Stopped => "Le service Guardian est arrêté",
-            _ => "État des moteurs inconnu",
+            ProtectionState.Healthy => Loc.T("Tous les moteurs sont opérationnels"),
+            ProtectionState.Degraded => Loc.T("Certains moteurs sont dégradés"),
+            ProtectionState.OutOfDate => Loc.T("Des définitions sont obsolètes"),
+            ProtectionState.Stopped => Loc.T("Le service Guardian est arrêté"),
+            _ => Loc.T("État des moteurs inconnu"),
         };
     }
 

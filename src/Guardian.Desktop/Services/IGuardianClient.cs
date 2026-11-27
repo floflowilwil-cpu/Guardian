@@ -9,7 +9,7 @@ namespace Guardian.Desktop.Services;
 /// </summary>
 public interface IGuardianClient
 {
-    /// <summary>Vrai uniquement pour le mode démonstration (--demo) : données fictives.</summary>
+    /// <summary>Vrai si une partie des données affichées est fictive (modules pas encore branchés).</summary>
     bool IsDemo { get; }
 
     Task<GuardianSnapshot> GetSnapshotAsync(CancellationToken ct = default);

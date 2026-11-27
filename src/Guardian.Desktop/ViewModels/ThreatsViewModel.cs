@@ -44,9 +44,9 @@ public sealed class ThreatsViewModel : ObservableObject, IPage
 
     public string RiskText => Selected?.Risk switch
     {
-        RiskLevel.High => "Élevé",
-        RiskLevel.Medium => "Moyen",
-        RiskLevel.Low => "Faible",
+        RiskLevel.High => Loc.T("Élevé"),
+        RiskLevel.Medium => Loc.T("Moyen"),
+        RiskLevel.Low => Loc.T("Faible"),
         _ => string.Empty,
     };
 
@@ -84,7 +84,7 @@ public sealed class ThreatsViewModel : ObservableObject, IPage
 
         var ok = await _client.QuarantineThreatAsync(Selected.Id);
         Message = ok
-            ? "Demande de mise en quarantaine envoyée au service."
-            : "Le service n'a pas pu traiter la demande.";
+            ? Loc.T("Demande de mise en quarantaine envoyée au service.")
+            : Loc.T("Le service n'a pas pu traiter la demande.");
     }
 }

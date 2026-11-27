@@ -10,6 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Guardian.Contracts\Guardian.Contracts.csproj" />
+    <ProjectReference Include="..\Guardian.Scanner\Guardian.Scanner.csproj" />
+    <ProjectReference Include="..\Guardian.Signatures\Guardian.Signatures.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Assets\*.png" />
     <Resource Include="Assets\guardian.ico" />
   </ItemGroup>

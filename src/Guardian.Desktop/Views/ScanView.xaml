@@ -33,7 +33,7 @@
                 </StackPanel>
                 <TextBlock Text="{loc:Loc 'Choisissez votre type d\'analyse'}" FontSize="15"/>
             </StackPanel>
-            <ContentControl Content="{StaticResource MagnifierArt}" Width="110" Height="110" HorizontalAlignment="Right"/>
+            <Image Source="/Assets/magnifier.png" Width="120" Height="120" HorizontalAlignment="Right" RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
         </Grid>
 
         <UniformGrid Columns="3">

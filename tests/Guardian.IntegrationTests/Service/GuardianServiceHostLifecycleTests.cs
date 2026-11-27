@@ -14,11 +14,13 @@ public class GuardianServiceHostLifecycleTests
     public async Task ServiceHost_StartsWithoutUi_ReportsHealthyAndTransitionsToStoppedOnShutdown()
     {
         var builder = Host.CreateApplicationBuilder();
+        var missingDataDir = Path.Combine(Path.GetTempPath(), $"guardian-nonexistent-{Guid.NewGuid():N}");
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["GuardianService:HeartbeatIntervalSeconds"] = "1",
             ["GuardianService:HeartbeatStaleThresholdSeconds"] = "10",
-            ["GuardianService:ShutdownTimeoutSeconds"] = "5"
+            ["GuardianService:ShutdownTimeoutSeconds"] = "5",
+            ["GuardianService:DataDirectoryOverride"] = missingDataDir
         });
         builder.Services.AddGuardianServiceCore(builder.Configuration);
 

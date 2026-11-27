@@ -1,5 +1,7 @@
 using Guardian.Desktop.Models;
 
+using Guardian.Desktop.Infrastructure;
+
 namespace Guardian.Desktop.Services;
 
 /// <summary>
@@ -28,17 +30,17 @@ public sealed class DemoGuardianClient : IGuardianClient
         Task.FromResult(new GuardianSnapshot(
             ProtectionState.Healthy, true, true, true,
             [
-                new EngineStatus("Analyse des fichiers", ProtectionState.Healthy),
-                new EngineStatus("Protection réseau", ProtectionState.Healthy),
-                new EngineStatus("Surveillance système", ProtectionState.Healthy),
-                new EngineStatus("Protection comportementale", ProtectionState.Healthy),
-                new EngineStatus("IA locale", ProtectionState.Healthy),
+                new EngineStatus(Loc.T("Analyse des fichiers"), ProtectionState.Healthy),
+                new EngineStatus(Loc.T("Protection réseau"), ProtectionState.Healthy),
+                new EngineStatus(Loc.T("Surveillance système"), ProtectionState.Healthy),
+                new EngineStatus(Loc.T("Protection comportementale"), ProtectionState.Healthy),
+                new EngineStatus(Loc.T("IA locale"), ProtectionState.Healthy),
             ],
             _threats.ToList(), 3, _quarantine.ToList(), 12, 12, 1,
             [
                 new NetworkDestination("Microsoft (safe)", 42, true),
                 new NetworkDestination("Google (safe)", 34, true),
-                new NetworkDestination("Autres", 24, false),
+                new NetworkDestination(Loc.T("Autres"), 24, false),
             ],
             DateTime.Now));
 

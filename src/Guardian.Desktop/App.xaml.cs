@@ -28,11 +28,13 @@ public partial class App : Application
             args.SetObserved();
         };
 
-        ThemeService.Apply(UiPreferences.Load().Theme);
+        var prefs = UiPreferences.Load();
+        ThemeService.Apply(prefs.Theme);
+        Loc.SetLanguage(prefs.Language);
 
-        // Le service Guardian (IPC) n'est pas encore branché : l'interface s'ouvre directement
-        // avec des données d'exemple, sans argument de lancement nécessaire.
-        IGuardianClient client = new DemoGuardianClient();
+        // Scan réel branché sur Guardian.Scanner ; les autres modules restent sur les données d'exemple
+        // jusqu'à leur fusion. Quand l'IPC de John sera prêt : new IpcGuardianClient(...).
+        IGuardianClient client = new ScannerGuardianClient(new DemoGuardianClient());
 
         var window = new MainWindow { DataContext = new MainViewModel(client) };
         MainWindow = window;

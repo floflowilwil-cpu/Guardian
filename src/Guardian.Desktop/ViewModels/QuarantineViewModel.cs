@@ -15,7 +15,7 @@ public sealed class QuarantineViewModel : ObservableObject, IPage
     public QuarantineViewModel(IGuardianClient client)
     {
         _client = client;
-        RestoreCommand = new AsyncRelayCommand(() => RunAsync(ids => _client.RestoreAsync(ids), "Restauration"));
+        RestoreCommand = new AsyncRelayCommand(() => RunAsync(ids => _client.RestoreAsync(ids), Loc.T("Restauration")));
         DeleteCommand = new AsyncRelayCommand(DeleteAsync);
     }
 
@@ -25,7 +25,7 @@ public sealed class QuarantineViewModel : ObservableObject, IPage
 
     public ICommand DeleteCommand { get; }
 
-    public string Title => $"Éléments en quarantaine ({Items.Count})";
+    public string Title => $"{Loc.T("Éléments en quarantaine")} ({Items.Count})";
 
     public bool HasItems => Items.Count > 0;
 
@@ -56,11 +56,11 @@ public sealed class QuarantineViewModel : ObservableObject, IPage
 
         // Suppression définitive : confirmation explicite (doc §9, opérations auditables et réversibles).
         var answer = MessageBox.Show(
-            $"Supprimer définitivement {count} élément(s) ? Cette action est irréversible.",
+            string.Format(Loc.T("Supprimer définitivement {0} élément(s) ? Cette action est irréversible."), count),
             "Guardian", MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (answer == MessageBoxResult.Yes)
         {
-            await RunAsync(ids => _client.DeleteAsync(ids), "Suppression");
+            await RunAsync(ids => _client.DeleteAsync(ids), Loc.T("Suppression"));
         }
     }
 
@@ -69,13 +69,13 @@ public sealed class QuarantineViewModel : ObservableObject, IPage
         var ids = Items.Where(i => i.IsChecked).Select(i => i.Id).ToList();
         if (ids.Count == 0)
         {
-            Message = "Sélectionnez au moins un élément.";
+            Message = Loc.T("Sélectionnez au moins un élément.");
             return;
         }
 
         var ok = await action(ids);
         Message = ok
-            ? $"{label} demandée au service."
-            : "Le service n'a pas pu traiter la demande.";
+            ? $"{label} {Loc.T("demandée au service.")}"
+            : Loc.T("Le service n'a pas pu traiter la demande.");
     }
 }

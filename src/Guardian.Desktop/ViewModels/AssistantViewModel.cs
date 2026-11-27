@@ -15,7 +15,7 @@ public sealed class AssistantViewModel : ObservableObject, IPage
     public AssistantViewModel(IGuardianClient client)
     {
         _client = client;
-        Messages.Add(new ChatMessage("Bonjour ! Je suis Guardian IA. Comment puis-je vous aider ?", false));
+        Messages.Add(new ChatMessage(Loc.T("Bonjour ! Je suis Guardian IA. Comment puis-je vous aider ?"), false));
         SendCommand = new AsyncRelayCommand(() => SendAsync(Input), () => !_busy && !string.IsNullOrWhiteSpace(Input));
         SuggestCommand = new AsyncRelayCommand(async p =>
         {
@@ -30,9 +30,9 @@ public sealed class AssistantViewModel : ObservableObject, IPage
 
     public IReadOnlyList<string> Suggestions { get; } =
     [
-        "Pourquoi ce fichier est-il bloqué ?",
-        "Voir les menaces liées",
-        "Analyser un fichier",
+        Loc.T("Pourquoi ce fichier est-il bloqué ?"),
+        Loc.T("Voir les menaces liées"),
+        Loc.T("Analyser un fichier"),
     ];
 
     public ICommand SendCommand { get; }
@@ -59,7 +59,7 @@ public sealed class AssistantViewModel : ObservableObject, IPage
         {
             var answer = await _client.AskAssistantAsync(text);
             Messages.Add(new ChatMessage(
-                answer ?? "L'assistant local n'est pas joignable : le service Guardian ne répond pas.",
+                answer ?? Loc.T("L'assistant local n'est pas joignable : le service Guardian ne répond pas."),
                 false));
         }
         finally

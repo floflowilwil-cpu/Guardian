@@ -11,15 +11,18 @@ public sealed class NavItem : ObservableObject
 {
     private bool _isSelected;
 
+    private readonly string _titleKey;
+
     public NavItem(string title, string glyph, string iconColor, IPage page)
     {
-        Title = title;
+        _titleKey = title;
+        Loc.LanguageChanged += () => Raise(nameof(Title));
         Glyph = glyph;
         IconColor = iconColor;
         Page = page;
     }
 
-    public string Title { get; }
+    public string Title => Loc.T(_titleKey);
 
     public string Glyph { get; }
 
@@ -37,13 +40,23 @@ public sealed class MainViewModel : ObservableObject
     private readonly DispatcherTimer _timer;
     private NavItem _selected;
     private bool _refreshing;
+    private GuardianSnapshot _lastSnapshot = GuardianSnapshot.Unknown;
 
     public MainViewModel(IGuardianClient client)
     {
         _client = client;
 
         ScanPage = new ScanViewModel(client);
-        var dashboard = new DashboardViewModel(() => Navigate(ScanPage));
+        var dashboard = new DashboardViewModel(kind =>
+        {
+            // L'accueil lance directement le type d'analyse choisi et ouvre l'écran de progression.
+            ScanPage.Prepare(kind);
+            Navigate(ScanPage);
+            if (ScanPage.StartCommand.CanExecute(null))
+            {
+                ScanPage.StartCommand.Execute(null);
+            }
+        });
 
         Items =
         [
@@ -77,6 +90,7 @@ public sealed class MainViewModel : ObservableObject
             catch (Exception ex) { AppLog.Write(ex, "Actualisation périodique"); }
         };
         _timer.Start();
+        Loc.LanguageChanged += () => ApplyToPages(_lastSnapshot);
         _ = RefreshAsync();
     }
 
@@ -118,6 +132,15 @@ public sealed class MainViewModel : ObservableObject
         Selected = item;
     }
 
+    private void ApplyToPages(GuardianSnapshot snapshot)
+    {
+        foreach (var item in Items)
+        {
+            try { item.Page.Apply(snapshot); }
+            catch (Exception ex) { AppLog.Write(ex, $"Mise à jour de la page {item.Title}"); }
+        }
+    }
+
     private async Task RefreshAsync()
     {
         if (_refreshing)
@@ -139,11 +162,8 @@ public sealed class MainViewModel : ObservableObject
                 snapshot = GuardianSnapshot.Unknown;
             }
 
-            foreach (var item in Items)
-            {
-                try { item.Page.Apply(snapshot); }
-                catch (Exception ex) { AppLog.Write(ex, $"Mise à jour de la page {item.Title}"); }
-            }
+            _lastSnapshot = snapshot;
+            ApplyToPages(snapshot);
         }
         catch (Exception ex)
         {

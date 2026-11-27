@@ -26,7 +26,13 @@ public enum ScanKind
     Custom,
 }
 
-public sealed record ScanProgress(int Percent, string CurrentPath);
+public sealed record ScanProgress(
+    int Percent,
+    string CurrentPath,
+    int FilesProcessed = 0,
+    int FilesTotal = 0,
+    int ThreatsFound = 0,
+    int FilesSkipped = 0);
 
 public sealed record EngineStatus(string Name, ProtectionState State);
 
@@ -60,9 +66,9 @@ public sealed class QuarantineItem : ObservableObject
 
     public string RiskLabel => Risk switch
     {
-        RiskLevel.High => "Élevé",
-        RiskLevel.Medium => "Moyen",
-        _ => "Faible",
+        RiskLevel.High => Loc.T("Élevé"),
+        RiskLevel.Medium => Loc.T("Moyen"),
+        _ => Loc.T("Faible"),
     };
 
     public bool IsChecked

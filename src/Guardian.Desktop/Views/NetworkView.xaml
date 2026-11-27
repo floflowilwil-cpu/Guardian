@@ -1,6 +1,7 @@
 <UserControl x:Class="Guardian.Desktop.Views.NetworkView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Guardian.Desktop.Infrastructure">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -9,7 +10,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Activité réseau" Style="{StaticResource PageTitle}"/>
+        <TextBlock Grid.Row="0" Text="{loc:Loc 'Activité réseau'}" Style="{StaticResource PageTitle}"/>
 
         <!-- Carte stylisée des connexions -->
         <Border Grid.Row="1" Style="{StaticResource Card}" Height="190">
@@ -19,13 +20,13 @@
         <UniformGrid Grid.Row="2" Columns="2" Margin="0,14,0,0">
             <Border Style="{StaticResource Card}" Margin="0,0,7,0">
                 <StackPanel>
-                    <TextBlock Text="Connexions actives" Style="{StaticResource MutedText}"/>
+                    <TextBlock Text="{loc:Loc 'Connexions actives'}" Style="{StaticResource MutedText}"/>
                     <TextBlock Text="{Binding Active}" FontSize="26" FontWeight="SemiBold" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource Card}" Margin="7,0,0,0">
                 <StackPanel>
-                    <TextBlock Text="Connexions suspectes" Style="{StaticResource MutedText}"/>
+                    <TextBlock Text="{loc:Loc 'Connexions suspectes'}" Style="{StaticResource MutedText}"/>
                     <TextBlock Text="{Binding Suspicious}" FontSize="26" FontWeight="SemiBold" Margin="0,4,0,0"
                                Foreground="{DynamicResource DangerBrush}"/>
                 </StackPanel>
@@ -34,8 +35,8 @@
 
         <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,14,0,0" VerticalAlignment="Top">
             <StackPanel>
-                <TextBlock Text="Principales destinations" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                <TextBlock Text="Aucune donnée réseau disponible." Style="{StaticResource MutedText}"
+                <TextBlock Text="{loc:Loc 'Principales destinations'}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock Text="{loc:Loc 'Aucune donnée réseau disponible.'}" Style="{StaticResource MutedText}"
                            Visibility="{Binding HasData, Converter={StaticResource InverseBoolToVisibility}}"/>
                 <ItemsControl ItemsSource="{Binding Destinations}">
                     <ItemsControl.ItemTemplate>

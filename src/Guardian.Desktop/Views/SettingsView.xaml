@@ -1,37 +1,38 @@
 <UserControl x:Class="Guardian.Desktop.Views.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Guardian.Desktop.Infrastructure">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="680" HorizontalAlignment="Left">
 
             <!-- Titre avec l'icône Paramètres en bleu -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
                 <TextBlock Text="&#xE713;" Style="{StaticResource Glyph}" FontSize="28" Foreground="#38BDF8" Margin="0,0,12,0"/>
-                <TextBlock Text="Paramètres" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:Loc 'Paramètres'}" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
             </StackPanel>
 
             <!-- Apparence et comportement -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Apparence" FontSize="11" FontWeight="Bold" Foreground="#5F8FB9"/>
+                    <TextBlock Text="{loc:Loc 'Apparence'}" FontSize="11" FontWeight="Bold" Foreground="#5F8FB9"/>
 
-                    <TextBlock Text="Thème de l'application" FontWeight="SemiBold" Margin="0,12,0,0"/>
+                    <TextBlock Text="{loc:Loc 'Thème de l\'application'}" FontWeight="SemiBold" Margin="0,12,0,0"/>
                     <ListBox Style="{StaticResource PlainListBox}" SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}" Margin="0,10,0,0">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
-                        <ListBoxItem Content="Clair" Padding="18,6" Margin="0,0,8,0"/>
-                        <ListBoxItem Content="Sombre" Padding="18,6" Margin="0,0,8,0"/>
-                        <ListBoxItem Content="Automatique" Padding="18,6"/>
+                        <ListBoxItem Content="{loc:Loc 'Clair'}" Padding="18,6" Margin="0,0,8,0"/>
+                        <ListBoxItem Content="{loc:Loc 'Sombre'}" Padding="18,6" Margin="0,0,8,0"/>
+                        <ListBoxItem Content="{loc:Loc 'Automatique'}" Padding="18,6"/>
                     </ListBox>
 
-                    <TextBlock Text="Langue" FontWeight="SemiBold" Margin="0,20,0,8"/>
+                    <TextBlock Text="{loc:Loc 'Langue'}" FontWeight="SemiBold" Margin="0,20,0,8"/>
                     <ComboBox Style="{StaticResource DarkCombo}" ItemsSource="{Binding Languages}"
                               SelectedItem="{Binding Language, Mode=TwoWay}" Width="220" HorizontalAlignment="Left"/>
 
                     <Rectangle Height="1" Fill="{DynamicResource LineBrush}" Margin="0,20,0,4" Opacity="0.7"/>
 
-                    <TextBlock Text="Confidentialité et notifications" FontSize="11" FontWeight="Bold" Foreground="#5F8FB9" Margin="0,14,0,0"/>
+                    <TextBlock Text="{loc:Loc 'Confidentialité et notifications'}" FontSize="11" FontWeight="Bold" Foreground="#5F8FB9" Margin="0,14,0,0"/>
 
                     <!-- Texte à gauche (qui passe à la ligne), interrupteur à droite : plus de chevauchement -->
                     <Grid Margin="0,14,0,0">
@@ -40,8 +41,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Margin="0,0,20,0">
-                            <TextBlock Text="Mode silencieux" FontSize="13" FontWeight="SemiBold"/>
-                            <TextBlock Text="Réduit les notifications sans désactiver les protections."
+                            <TextBlock Text="{loc:Loc 'Mode silencieux'}" FontSize="13" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:Loc 'Réduit les notifications sans désactiver les protections.'}"
                                        Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,3,0,0"/>
                         </StackPanel>
                         <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding SilentMode, Mode=TwoWay}"
@@ -54,8 +55,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Margin="0,0,20,0">
-                            <TextBlock Text="Mode hors ligne" FontSize="13" FontWeight="SemiBold"/>
-                            <TextBlock Text="Aucune donnée ne quitte l'appareil."
+                            <TextBlock Text="{loc:Loc 'Mode hors ligne'}" FontSize="13" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:Loc 'Aucune donnée ne quitte l\'appareil.'}"
                                        Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,3,0,0"/>
                         </StackPanel>
                         <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding OfflineMode, Mode=TwoWay}"
@@ -69,7 +70,7 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE9D9;" Style="{StaticResource Glyph}" FontSize="16" Foreground="#34D399" Margin="0,0,9,0"/>
-                        <TextBlock Text="État des moteurs" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{loc:Loc 'État des moteurs'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <TextBlock Text="&#xE73E;" Style="{StaticResource Glyph}" FontSize="13" Margin="0,0,8,0"

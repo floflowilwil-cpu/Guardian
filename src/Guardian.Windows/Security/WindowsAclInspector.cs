@@ -60,7 +60,10 @@ public sealed class WindowsAclInspector : IWindowsAclInspector
             using var currentIdentity = WindowsIdentity.GetCurrent();
             if (currentIdentity.User is not null)
             {
-                pipeSecurity.AddAccessRule(new PipeAccessRule(currentIdentity.User, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+                pipeSecurity.AddAccessRule(new PipeAccessRule(
+                    currentIdentity.User,
+                    PipeAccessRights.ReadWrite | PipeAccessRights.CreateNewInstance,
+                    AccessControlType.Allow));
             }
         }
 

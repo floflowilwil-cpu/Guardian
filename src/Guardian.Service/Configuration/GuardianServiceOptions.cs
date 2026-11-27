@@ -97,6 +97,8 @@ public sealed class GuardianServiceOptions
     /// </summary>
     public List<string> RequiredComponents { get; set; } =
     [
-        GuardianServiceConstants.HostComponentName
+        GuardianServiceConstants.HostComponentName,
+        GuardianServiceConstants.WatchdogComponentName,
+        GuardianServiceConstants.SelfIntegrityComponentName
     ];
 }

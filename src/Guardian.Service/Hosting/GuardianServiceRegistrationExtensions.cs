@@ -1,6 +1,8 @@
 using Guardian.Contracts.Health;
 using Guardian.Service.Configuration;
 using Guardian.Service.Health;
+using Guardian.Service.Security;
+using Guardian.Service.Watchdog;
 using Guardian.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +35,8 @@ public static class GuardianServiceRegistrationExtensions
     }
 
     /// <summary>
-    /// Enregistre les options validées, les adaptateurs Windows, le service de santé et l'hôte résident Guardian.
+    /// Enregistre les options validées, les adaptateurs Windows, le service de santé,
+    /// le watchdog anti-boucle, le moniteur d'auto-intégrité et l'hôte résident Guardian.
     /// </summary>
     /// <param name="services">Collection de services cible.</param>
     /// <param name="configuration">Configuration applicative source.</param>
@@ -69,7 +72,13 @@ public static class GuardianServiceRegistrationExtensions
         services.AddSingleton<GuardianHealthService>();
         services.AddSingleton<IGuardianHealthService>(sp => sp.GetRequiredService<GuardianHealthService>());
 
+        services.AddSingleton<WatchdogTracker>();
+        services.AddSingleton<ISelfIntegrityMonitor, SelfIntegrityMonitor>();
+
+        services.AddSingleton<GuardianWatchdogService>();
         services.AddHostedService<GuardianCoreHostWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<GuardianWatchdogService>());
+        services.AddHostedService<SelfIntegrityWorker>();
 
         return services;
     }

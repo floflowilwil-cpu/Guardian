@@ -2,7 +2,9 @@ using System.IO.Pipes;
 using System.Text.Json;
 using Guardian.Contracts.Health;
 using Guardian.Contracts.Ipc;
+using Guardian.Contracts.Memory;
 using Guardian.Contracts.Scanning;
+using Guardian.Contracts.System;
 
 namespace Guardian.Service.Ipc;
 
@@ -123,6 +125,36 @@ public sealed class NamedPipeIpcClient
     {
         var response = await SendCommandAsync(IpcCommandType.CancelScan, null, cancellationToken).ConfigureAwait(false);
         return DeserializePayload<IpcScanStatusDto>(response);
+    }
+
+    /// <summary>
+    /// Récupère les événements système et comportementaux récents conservés par le service.
+    /// </summary>
+    /// <param name="maxCount">Nombre maximal d'événements souhaité (1 à 100).</param>
+    /// <param name="cancellationToken">Jeton d'annulation.</param>
+    /// <returns>Liste des événements récents ou <see langword="null"/> en cas d'échec.</returns>
+    public async Task<IReadOnlyList<SystemSecurityEventDto>?> GetRecentSystemEventsAsync(
+        int maxCount = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var payloadJson = JsonSerializer.Serialize(Math.Clamp(maxCount, 1, 100), JsonOptions);
+        var response = await SendCommandAsync(IpcCommandType.GetRecentSystemEvents, payloadJson, cancellationToken).ConfigureAwait(false);
+        return DeserializePayload<IReadOnlyList<SystemSecurityEventDto>>(response);
+    }
+
+    /// <summary>
+    /// Déclenche une analyse défensive des métadonnées mémoire (sans lecture de secrets) sur un processus ou l'ensemble accessible.
+    /// </summary>
+    /// <param name="processId">PID cible optionnel, ou <see langword="null"/> pour analyser les processus accessibles.</param>
+    /// <param name="cancellationToken">Jeton d'annulation.</param>
+    /// <returns>Rapports d'analyse mémoire ou <see langword="null"/> en cas d'échec.</returns>
+    public async Task<IReadOnlyList<MemoryAnalysisReportDto>?> RunMemoryAnalysisAsync(
+        int? processId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var payloadJson = processId is > 0 ? JsonSerializer.Serialize(processId.Value, JsonOptions) : null;
+        var response = await SendCommandAsync(IpcCommandType.RunMemoryAnalysis, payloadJson, cancellationToken).ConfigureAwait(false);
+        return DeserializePayload<IReadOnlyList<MemoryAnalysisReportDto>>(response);
     }
 
     private Task<IpcResponse> SendCommandAsync(

@@ -71,5 +71,15 @@ public enum IpcCommandType
     /// <summary>
     /// Demande l'annulation propre de l'analyse en cours.
     /// </summary>
-    CancelScan = 12
+    CancelScan = 12,
+
+    /// <summary>
+    /// Récupère les événements comportementaux et système récents collectés par le service.
+    /// </summary>
+    GetRecentSystemEvents = 13,
+
+    /// <summary>
+    /// Exécute une inspection défensive des métadonnées mémoire sans lecture de contenu privé.
+    /// </summary>
+    RunMemoryAnalysis = 14
 }

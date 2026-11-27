@@ -32,9 +32,9 @@ public partial class App : Application
         ThemeService.Apply(prefs.Theme);
         Loc.SetLanguage(prefs.Language);
 
-        // Scan réel branché sur Guardian.Scanner ; les autres modules restent sur les données d'exemple
-        // jusqu'à leur fusion. Quand l'IPC de John sera prêt : new IpcGuardianClient(...).
-        IGuardianClient client = new ScannerGuardianClient(new DemoGuardianClient());
+        // Branchement principal sur Guardian.Service via IPC Named Pipes authentifié (Guardian.Service.Ipc.v1),
+        // avec repli local pour les modules pas encore exposés via IPC.
+        IGuardianClient client = new IpcGuardianClient(new ScannerGuardianClient(new DemoGuardianClient()));
 
         var window = new MainWindow { DataContext = new MainViewModel(client) };
         MainWindow = window;

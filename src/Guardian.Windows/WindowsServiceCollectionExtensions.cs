@@ -5,6 +5,7 @@ using Guardian.Windows.Processes;
 using Guardian.Windows.Registry;
 using Guardian.Windows.Security;
 using Guardian.Windows.Services;
+using Guardian.Windows.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Guardian.Windows;
@@ -26,6 +27,7 @@ public static class WindowsServiceCollectionExtensions
         services.AddSingleton<IWindowsPrivilegeInspector, WindowsPrivilegeInspector>();
         services.AddSingleton<IWindowsRegistryAdapter, WindowsRegistryAdapter>();
         services.AddSingleton<IWindowsServiceAdapter, WindowsServiceAdapter>();
+        services.AddSingleton<IWindowsScheduledTaskAdapter, WindowsScheduledTaskAdapter>();
         services.AddSingleton<IWindowsAclInspector, WindowsAclInspector>();
         services.AddSingleton<IWindowsAuthenticodeVerifier, WindowsAuthenticodeVerifier>();
         services.AddSingleton<IWindowsSecurityPostureReader, WindowsSecurityPostureReader>();

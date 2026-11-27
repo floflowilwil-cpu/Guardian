@@ -100,6 +100,7 @@ public sealed class GuardianServiceOptions
         GuardianServiceConstants.HostComponentName,
         GuardianServiceConstants.WatchdogComponentName,
         GuardianServiceConstants.SelfIntegrityComponentName,
+        GuardianServiceConstants.SystemMonitorComponentName,
         GuardianServiceConstants.IpcComponentName
     ];
 }

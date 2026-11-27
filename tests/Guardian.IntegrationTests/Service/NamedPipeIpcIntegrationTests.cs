@@ -60,7 +60,16 @@ public class NamedPipeIpcIntegrationTests
                 Assert.Contains(health.Components, c => c.ComponentName == GuardianServiceConstants.HostComponentName);
                 Assert.Contains(health.Components, c => c.ComponentName == GuardianServiceConstants.WatchdogComponentName);
                 Assert.Contains(health.Components, c => c.ComponentName == GuardianServiceConstants.SelfIntegrityComponentName);
+                Assert.Contains(health.Components, c => c.ComponentName == GuardianServiceConstants.SystemMonitorComponentName);
                 Assert.Contains(health.Components, c => c.ComponentName == GuardianServiceConstants.IpcComponentName);
+
+                var sysEvents = await client.GetRecentSystemEventsAsync(10);
+                Assert.NotNull(sysEvents);
+
+                var memoryReports = await client.RunMemoryAnalysisAsync(Environment.ProcessId);
+                Assert.NotNull(memoryReports);
+                var currentProcMemory = Assert.Single(memoryReports);
+                Assert.Equal(Environment.ProcessId, currentProcMemory.ProcessId);
 
                 var integrityResp = await client.SendAsync(new IpcRequest(
                     IpcProtocolConstants.ProtocolVersion,

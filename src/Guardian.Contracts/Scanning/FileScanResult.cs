@@ -1,4 +1,5 @@
 using Guardian.Contracts.AI.Models;
+using Guardian.Contracts.Heuristics;
 using Guardian.Contracts.Signatures;
 
 namespace Guardian.Contracts.Scanning;
@@ -21,5 +22,14 @@ public sealed record FileScanResult
 
     public bool IsDisguisedExecutable { get; init; }
     public SignatureMatch? Signature { get; init; }
+
+    /// <summary>
+    /// Score heuristique entre 0.0 et 1.0 (0 si l'analyse heuristique n'a pas eu lieu).
+    /// Même échelle que <c>RiskEvaluationContext.HeuristicScore</c>.
+    /// </summary>
+    public double HeuristicScore { get; init; }
+
+    public IReadOnlyList<HeuristicFinding> HeuristicFindings { get; init; } = [];
+
     public DateTime ScannedAtUtc { get; init; } = DateTime.UtcNow;
 }

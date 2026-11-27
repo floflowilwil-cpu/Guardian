@@ -56,5 +56,20 @@ public enum IpcCommandType
     /// <summary>
     /// Déclenche une vérification à la demande de l'auto-intégrité du service.
     /// </summary>
-    RequestSelfIntegrityCheck = 9
+    RequestSelfIntegrityCheck = 9,
+
+    /// <summary>
+    /// Démarre une analyse antivirus (rapide, complète sur tout le disque ou personnalisée).
+    /// </summary>
+    StartScan = 10,
+
+    /// <summary>
+    /// Récupère la progression en cours et le dernier bilan d'analyse.
+    /// </summary>
+    GetScanStatus = 11,
+
+    /// <summary>
+    /// Demande l'annulation propre de l'analyse en cours.
+    /// </summary>
+    CancelScan = 12
 }

@@ -1,14 +1,13 @@
+using System.Text;
 using System.Text.Json;
 using Guardian.Contracts.Health;
 using Guardian.Contracts.Ipc;
+using Guardian.Contracts.Memory;
+using Guardian.Contracts.System;
 using Guardian.Service.Configuration;
 using Guardian.Service.Scanning;
 using Guardian.Service.Security;
 using Guardian.Service.Watchdog;
-using Guardian.Windows.Processes;
-using Guardian.Windows.Registry;
-using Guardian.Windows.Security;
-using Guardian.Windows.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -23,10 +22,9 @@ public sealed class IpcRequestDispatcher : IIpcRequestDispatcher
 
     private readonly IGuardianHealthService _healthService;
     private readonly WatchdogTracker _watchdogTracker;
-    private readonly IWindowsSecurityPostureReader _securityPostureReader;
-    private readonly IWindowsProcessAdapter _processAdapter;
-    private readonly IWindowsServiceAdapter _serviceAdapter;
-    private readonly IWindowsRegistryAdapter _registryAdapter;
+    private readonly ISystemMonitor _systemMonitor;
+    private readonly IBehaviorMonitor _behaviorMonitor;
+    private readonly IMemoryAnalyzer _memoryAnalyzer;
     private readonly ISelfIntegrityMonitor _selfIntegrityMonitor;
     private readonly IScanExecutionCoordinator _scanCoordinator;
     private readonly IpcReplayGuard _replayGuard;
@@ -39,10 +37,9 @@ public sealed class IpcRequestDispatcher : IIpcRequestDispatcher
     /// </summary>
     /// <param name="healthService">Service central de santé Guardian.</param>
     /// <param name="watchdogTracker">Suivi d'état du watchdog.</param>
-    /// <param name="securityPostureReader">Lecteur de posture de sécurité Windows.</param>
-    /// <param name="processAdapter">Adaptateur d'inventaire processus.</param>
-    /// <param name="serviceAdapter">Adaptateur d'inventaire services Windows.</param>
-    /// <param name="registryAdapter">Adaptateur registre en lecture seule.</param>
+    /// <param name="systemMonitor">Moniteur système en lecture seule (processus, services, persistance, posture).</param>
+    /// <param name="behaviorMonitor">Moniteur comportemental temps réel en mémoire bornée.</param>
+    /// <param name="memoryAnalyzer">Analyseur défensif des métadonnées mémoire.</param>
     /// <param name="selfIntegrityMonitor">Moniteur d'auto-intégrité.</param>
     /// <param name="scanCoordinator">Coordinateur d'analyses de fichiers.</param>
     /// <param name="replayGuard">Protection anti-rejeu IPC.</param>
@@ -52,10 +49,9 @@ public sealed class IpcRequestDispatcher : IIpcRequestDispatcher
     public IpcRequestDispatcher(
         IGuardianHealthService healthService,
         WatchdogTracker watchdogTracker,
-        IWindowsSecurityPostureReader securityPostureReader,
-        IWindowsProcessAdapter processAdapter,
-        IWindowsServiceAdapter serviceAdapter,
-        IWindowsRegistryAdapter registryAdapter,
+        ISystemMonitor systemMonitor,
+        IBehaviorMonitor behaviorMonitor,
+        IMemoryAnalyzer memoryAnalyzer,
         ISelfIntegrityMonitor selfIntegrityMonitor,
         IScanExecutionCoordinator scanCoordinator,
         IpcReplayGuard replayGuard,
@@ -65,10 +61,9 @@ public sealed class IpcRequestDispatcher : IIpcRequestDispatcher
     {
         _healthService = healthService ?? throw new ArgumentNullException(nameof(healthService));
         _watchdogTracker = watchdogTracker ?? throw new ArgumentNullException(nameof(watchdogTracker));
-        _securityPostureReader = securityPostureReader ?? throw new ArgumentNullException(nameof(securityPostureReader));
-        _processAdapter = processAdapter ?? throw new ArgumentNullException(nameof(processAdapter));
-        _serviceAdapter = serviceAdapter ?? throw new ArgumentNullException(nameof(serviceAdapter));
-        _registryAdapter = registryAdapter ?? throw new ArgumentNullException(nameof(registryAdapter));
+        _systemMonitor = systemMonitor ?? throw new ArgumentNullException(nameof(systemMonitor));
+        _behaviorMonitor = behaviorMonitor ?? throw new ArgumentNullException(nameof(behaviorMonitor));
+        _memoryAnalyzer = memoryAnalyzer ?? throw new ArgumentNullException(nameof(memoryAnalyzer));
         _selfIntegrityMonitor = selfIntegrityMonitor ?? throw new ArgumentNullException(nameof(selfIntegrityMonitor));
         _scanCoordinator = scanCoordinator ?? throw new ArgumentNullException(nameof(scanCoordinator));
         _replayGuard = replayGuard ?? throw new ArgumentNullException(nameof(replayGuard));
@@ -213,25 +208,25 @@ public sealed class IpcRequestDispatcher : IIpcRequestDispatcher
 
             case IpcCommandType.GetSecurityPosture:
             {
-                var posture = await _securityPostureReader.ReadPostureAsync(cancellationToken).ConfigureAwait(false);
+                var posture = await _systemMonitor.GetSecurityPostureAsync(cancellationToken).ConfigureAwait(false);
                 return Success(request.RequestId, JsonSerializer.Serialize(posture, JsonOptions), _timeProvider.GetUtcNow());
             }
 
             case IpcCommandType.GetProcesses:
             {
-                var processes = await _processAdapter.GetProcessesAsync(includeModules: false, cancellationToken).ConfigureAwait(false);
+                var processes = await _systemMonitor.GetProcessesAsync(includeModules: false, cancellationToken).ConfigureAwait(false);
                 return Success(request.RequestId, JsonSerializer.Serialize(processes, JsonOptions), _timeProvider.GetUtcNow());
             }
 
             case IpcCommandType.GetServices:
             {
-                var services = await _serviceAdapter.GetServicesAsync(cancellationToken).ConfigureAwait(false);
+                var services = await _systemMonitor.GetServicesAsync(cancellationToken).ConfigureAwait(false);
                 return Success(request.RequestId, JsonSerializer.Serialize(services, JsonOptions), _timeProvider.GetUtcNow());
             }
 
             case IpcCommandType.GetStartupEntries:
             {
-                var entries = await _registryAdapter.GetStartupEntriesAsync(cancellationToken).ConfigureAwait(false);
+                var entries = await _systemMonitor.GetStartupEntriesAsync(cancellationToken).ConfigureAwait(false);
                 return Success(request.RequestId, JsonSerializer.Serialize(entries, JsonOptions), _timeProvider.GetUtcNow());
             }
 
@@ -278,6 +273,47 @@ public sealed class IpcRequestDispatcher : IIpcRequestDispatcher
                 return Success(request.RequestId, JsonSerializer.Serialize(status, JsonOptions), now);
             }
 
+            case IpcCommandType.GetRecentSystemEvents:
+            {
+                var maxCount = 50;
+                if (!string.IsNullOrWhiteSpace(request.PayloadJson))
+                {
+                    if (!TryDeserialize<int>(request.PayloadJson, out var requestedCount))
+                    {
+                        return Failure(request.RequestId, IpcErrorCode.InvalidRequest, "PayloadJson must be empty or a valid integer count.", now);
+                    }
+
+                    maxCount = requestedCount;
+                }
+
+                var clampedCount = Math.Clamp(maxCount, 1, 100);
+                var events = await _behaviorMonitor.GetRecentEventsAsync(clampedCount, cancellationToken).ConfigureAwait(false);
+                return Success(request.RequestId, JsonSerializer.Serialize(events, JsonOptions), _timeProvider.GetUtcNow());
+            }
+
+            case IpcCommandType.RunMemoryAnalysis:
+            {
+                if (!string.IsNullOrWhiteSpace(request.PayloadJson))
+                {
+                    if (!TryDeserialize<int>(request.PayloadJson, out var processId) || processId <= 0)
+                    {
+                        return Failure(request.RequestId, IpcErrorCode.InvalidRequest, "PayloadJson must be empty or a positive integer process ID.", now);
+                    }
+
+                    var singleReport = await _memoryAnalyzer.AnalyzeProcessAsync(processId, cancellationToken).ConfigureAwait(false);
+                    return Success(request.RequestId, JsonSerializer.Serialize(new[] { singleReport }, JsonOptions), _timeProvider.GetUtcNow());
+                }
+
+                var allReports = await _memoryAnalyzer.ScanAllAccessibleProcessesAsync(cancellationToken).ConfigureAwait(false);
+                var ordered = allReports
+                    .OrderByDescending(r => r.Signals.Count > 0)
+                    .ThenBy(r => r.ProcessId)
+                    .ToArray();
+
+                var payloadJson = SerializeWithinIpcBudget(ordered, maxInitialItems: 80);
+                return Success(request.RequestId, payloadJson, _timeProvider.GetUtcNow());
+            }
+
             default:
                 return Failure(request.RequestId, IpcErrorCode.UnknownCommand, $"Unsupported command '{request.Command}'.", now);
         }
@@ -300,6 +336,26 @@ public sealed class IpcRequestDispatcher : IIpcRequestDispatcher
         {
             return false;
         }
+    }
+
+    private string SerializeWithinIpcBudget(IReadOnlyList<MemoryAnalysisReportDto> reports, int maxInitialItems)
+    {
+        var maxBudgetBytes = Math.Max(4096, _options.Value.IpcMaxMessageBytes - 2048);
+        var limit = Math.Min(reports.Count, maxInitialItems);
+
+        while (limit > 0)
+        {
+            var slice = reports.Take(limit).ToArray();
+            var json = JsonSerializer.Serialize(slice, JsonOptions);
+            if (Encoding.UTF8.GetByteCount(json) <= maxBudgetBytes)
+            {
+                return json;
+            }
+
+            limit = Math.Max(0, limit / 2);
+        }
+
+        return "[]";
     }
 
     private static IpcResponse Success(string requestId, string? payloadJson, DateTimeOffset timestampUtc) =>

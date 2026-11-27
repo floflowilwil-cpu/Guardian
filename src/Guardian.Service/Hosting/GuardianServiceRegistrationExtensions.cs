@@ -13,6 +13,7 @@ using Guardian.Service.Scanning;
 using Guardian.Service.Security;
 using Guardian.Service.Watchdog;
 using Guardian.Signatures;
+using Guardian.SystemMonitor;
 using Guardian.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -78,6 +79,7 @@ public static class GuardianServiceRegistrationExtensions
         });
 
         services.AddGuardianWindowsAdapters();
+        services.AddGuardianSystemMonitor(configuration);
 
         services.AddSingleton<GuardianHealthService>();
         services.AddSingleton<IGuardianHealthService>(sp => sp.GetRequiredService<GuardianHealthService>());
@@ -108,8 +110,12 @@ public static class GuardianServiceRegistrationExtensions
         services.AddSingleton<NamedPipeIpcServer>();
         services.AddSingleton<IMonitoredComponent>(sp => sp.GetRequiredService<NamedPipeIpcServer>());
 
+        services.AddSingleton<SystemMonitorHostWorker>();
+        services.AddSingleton<IMonitoredComponent>(sp => sp.GetRequiredService<SystemMonitorHostWorker>());
+
         services.AddSingleton<GuardianWatchdogService>();
         services.AddHostedService<GuardianCoreHostWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<SystemMonitorHostWorker>());
         services.AddHostedService(sp => sp.GetRequiredService<NamedPipeIpcServer>());
         services.AddHostedService(sp => sp.GetRequiredService<GuardianWatchdogService>());
         services.AddHostedService<SelfIntegrityWorker>();

@@ -36,6 +36,11 @@ public static class GuardianServiceConstants
     public const string SelfIntegrityComponentName = "Guardian.Service.SelfIntegrity";
 
     /// <summary>
+    /// Nom canonique du module de surveillance système et comportementale.
+    /// </summary>
+    public const string SystemMonitorComponentName = "Guardian.SystemMonitor";
+
+    /// <summary>
     /// Nom canonique du moteur d'analyse de fichiers hébergé par le service.
     /// </summary>
     public const string ScannerComponentName = "Guardian.Scanner";

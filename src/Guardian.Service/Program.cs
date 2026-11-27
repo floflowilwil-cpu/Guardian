@@ -1,7 +1,8 @@
-using Guardian.Service;
+using Guardian.Service.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
+builder.UseGuardianWindowsService();
+builder.Services.AddGuardianServiceCore(builder.Configuration);
 
-var host = builder.Build();
-host.Run();
+using var host = builder.Build();
+await host.RunAsync();

@@ -17,6 +17,7 @@ public sealed class SelfIntegrityWorker : BackgroundService
     private readonly IOptions<GuardianServiceOptions> _options;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SelfIntegrityWorker> _logger;
+    private DateTimeOffset _lastCheckUtc;
 
     /// <summary>
     /// Initialise le travailleur périodique d'auto-intégrité.
@@ -44,6 +45,7 @@ public sealed class SelfIntegrityWorker : BackgroundService
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
         var initialReport = await _monitor.InitializeBaselineAsync(cancellationToken).ConfigureAwait(false);
+        _lastCheckUtc = _timeProvider.GetUtcNow();
         _logger.LogInformation(
             "Self-integrity baseline initialized with {Count} file(s); status={Status}.",
             initialReport.BaselineFileCount,
@@ -55,14 +57,25 @@ public sealed class SelfIntegrityWorker : BackgroundService
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var interval = TimeSpan.FromMinutes(_options.Value.IntegrityCheckIntervalMinutes);
-        using var timer = new PeriodicTimer(interval, _timeProvider);
+        var heartbeatInterval = TimeSpan.FromSeconds(Math.Max(1, _options.Value.HeartbeatIntervalSeconds));
+        var integrityInterval = TimeSpan.FromMinutes(Math.Max(1, _options.Value.IntegrityCheckIntervalMinutes));
+        using var timer = new PeriodicTimer(heartbeatInterval, _timeProvider);
 
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
             {
-                await _monitor.VerifyIntegrityAsync(stoppingToken).ConfigureAwait(false);
+                var now = _timeProvider.GetUtcNow();
+                if (now - _lastCheckUtc >= integrityInterval)
+                {
+                    await _monitor.VerifyIntegrityAsync(stoppingToken).ConfigureAwait(false);
+                    _lastCheckUtc = _timeProvider.GetUtcNow();
+                    continue;
+                }
+
+                await _healthService
+                    .RecordHeartbeatAsync(GuardianServiceConstants.SelfIntegrityComponentName, now, stoppingToken)
+                    .ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

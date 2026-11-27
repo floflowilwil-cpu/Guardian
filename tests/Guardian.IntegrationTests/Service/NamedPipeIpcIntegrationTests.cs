@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Guardian.Contracts.Common;
 using Guardian.Contracts.Ipc;
@@ -8,6 +9,7 @@ using Guardian.Service.Ipc;
 using Guardian.Service.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Guardian.IntegrationTests.Service;
 
@@ -113,6 +115,78 @@ public class NamedPipeIpcIntegrationTests
             if (Directory.Exists(tempRoot))
             {
                 Directory.Delete(tempRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task NamedPipeServer_ShouldAcceptConcurrentClientRequestsWithoutAccessDenied()
+    {
+        var pipeName = $"Guardian.Test.Concurrent.{Guid.NewGuid():N}";
+        var missingDataDir = Path.Combine(Path.GetTempPath(), $"guardian-ipc-conc-{Guid.NewGuid():N}");
+        var errorLogs = new ConcurrentQueue<string>();
+
+        var builder = Host.CreateApplicationBuilder();
+        builder.Logging.ClearProviders();
+        builder.Logging.AddProvider(new ErrorCapturingLoggerProvider(errorLogs));
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["GuardianService:IpcPipeName"] = pipeName,
+            ["GuardianService:HeartbeatIntervalSeconds"] = "5",
+            ["GuardianService:HeartbeatStaleThresholdSeconds"] = "15",
+            ["GuardianService:ShutdownTimeoutSeconds"] = "5",
+            ["GuardianService:DataDirectoryOverride"] = missingDataDir
+        });
+        builder.Services.AddGuardianServiceCore(builder.Configuration);
+
+        using var host = builder.Build();
+        await host.StartAsync();
+
+        try
+        {
+            var client = new NamedPipeIpcClient(pipeName, timeout: TimeSpan.FromSeconds(5));
+
+            var pingTasks = Enumerable.Range(0, 4)
+                .Select(_ => client.PingAsync())
+                .ToArray();
+            var healthTasks = Enumerable.Range(0, 4)
+                .Select(_ => client.GetHealthAsync())
+                .ToArray();
+
+            var pingResults = await Task.WhenAll(pingTasks);
+            var healthResults = await Task.WhenAll(healthTasks);
+
+            Assert.All(pingResults, r => Assert.True(r.Success));
+            Assert.All(healthResults, h => Assert.NotNull(h));
+            Assert.Empty(errorLogs);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    private sealed class ErrorCapturingLoggerProvider(ConcurrentQueue<string> errors) : ILoggerProvider
+    {
+        public ILogger CreateLogger(string categoryName) => new ErrorLogger(categoryName, errors);
+        public void Dispose() { }
+
+        private sealed class ErrorLogger(string category, ConcurrentQueue<string> errors) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+            public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Error;
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                if (logLevel >= LogLevel.Error)
+                {
+                    errors.Enqueue($"{category}: {formatter(state, exception)} {exception?.GetType().Name}");
+                }
             }
         }
     }

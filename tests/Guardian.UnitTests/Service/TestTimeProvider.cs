@@ -23,6 +23,17 @@ internal sealed class TestTimeProvider : TimeProvider
 
     public override long TimestampFrequency => TimeSpan.TicksPerSecond;
 
+    public int ActiveTimerCount
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _timers.Count;
+            }
+        }
+    }
+
     public void Advance(TimeSpan delta)
     {
         if (delta < TimeSpan.Zero)

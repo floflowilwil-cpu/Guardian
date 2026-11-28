@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Guardian.Contracts\Guardian.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Guardian.Data\Guardian.Data.csproj" />
     <ProjectReference Include="..\..\src\Guardian.Core\Guardian.Core.csproj" />
     <ProjectReference Include="..\..\src\Guardian.AI\Guardian.AI.csproj" />
     <ProjectReference Include="..\..\src\Guardian.Windows\Guardian.Windows.csproj" />

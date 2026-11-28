@@ -25,6 +25,8 @@
         <DataTemplate DataType="{x:Type vm:NetworkViewModel}"><views:NetworkView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:AssistantViewModel}"><views:AssistantView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><views:SettingsView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SystemViewModel}"><views:SystemView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReportsViewModel}"><views:ReportsView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}"><views:PlaceholderView/></DataTemplate>
 
         <!-- Boutons de la barre de titre : visibles et cliquables dans la zone "caption" -->

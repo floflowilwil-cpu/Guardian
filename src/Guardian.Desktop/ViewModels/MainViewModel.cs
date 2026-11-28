@@ -66,8 +66,8 @@ public sealed class MainViewModel : ObservableObject
             new("Menaces", "\uE7BA", "#FBBF24", new ThreatsViewModel(client)),
             new("Quarantaine", "\uE72E", "#FB923C", new QuarantineViewModel(client)),
             new("Réseau", "\uE774", "#22D3EE", new NetworkViewModel()),
-            new("Système", "\uE770", "#60A5FA", new PlaceholderViewModel("Surveillance système")),
-            new("Rapports", "\uE9D9", "#F472B6", new PlaceholderViewModel("Historique et rapports")),
+            new("Système", "\uE770", "#60A5FA", new SystemViewModel()),
+            new("Rapports", "\uE9D9", "#F472B6", new ReportsViewModel(ScanHistoryStore.Default, () => Navigate(ScanPage))),
             new("IA Assistant", "\uE8BD", "#C084FC", new AssistantViewModel(client)),
             new("Paramètres", "\uE713", "#38BDF8", new SettingsViewModel()),
         ];

@@ -1,0 +1,152 @@
+<UserControl x:Class="Guardian.Desktop.Views.SystemView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Guardian.Desktop.Infrastructure">
+    <StackPanel>
+
+        <!-- En-tête : titre, version de Windows, droits de Guardian + illustration -->
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <TextBlock Text="&#xE770;" Style="{StaticResource Glyph}" FontSize="28" Foreground="#60A5FA" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{loc:Loc 'Surveillance système'}" Style="{StaticResource PageTitle}" Margin="0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="{Binding OsText}" FontSize="15" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding PrivilegeText}" Style="{StaticResource MutedText}" Margin="0,3,0,0"/>
+                <TextBlock Text="{Binding CapturedText}" Style="{StaticResource MutedText}"/>
+            </StackPanel>
+            <Image Grid.Column="1" Source="/Assets/system.png" Height="130" Margin="16,0,0,0" VerticalAlignment="Center"
+                   RenderOptions.BitmapScalingMode="HighQuality" Stretch="Uniform"/>
+        </Grid>
+
+        <!-- Bandeau d'état global -->
+        <Border Style="{StaticResource Card}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="46" Height="46" CornerRadius="23" Background="{DynamicResource CardAltBrush}" VerticalAlignment="Center">
+                    <TextBlock Text="&#xEA18;" Style="{StaticResource Glyph}" FontSize="22" HorizontalAlignment="Center"
+                               Foreground="{Binding State, Converter={StaticResource StateToBrush}}"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Headline}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap"
+                               Foreground="{Binding State, Converter={StaticResource StateToBrush}}"/>
+                    <TextBlock Text="{loc:Loc 'Guardian observe ces protections en lecture seule : il ne les modifie jamais.'}"
+                               Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center"
+                            Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding ScoreText}" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                    <TextBlock Text="{loc:Loc 'protections actives'}" Style="{StaticResource MutedText}" HorizontalAlignment="Right"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Protections Windows -->
+        <StackPanel Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="{loc:Loc 'Protections Windows'}" FontSize="11" FontWeight="Bold" Foreground="#5F8FB9" Margin="2,20,0,8"/>
+            <ItemsControl ItemsSource="{Binding Controls}" Margin="-5,0,-5,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}" Margin="5,0,5,10" Padding="14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="38" Height="38" CornerRadius="19" Background="{DynamicResource CardAltBrush}" VerticalAlignment="Top">
+                                    <TextBlock Text="{Binding StateGlyph}" Style="{StaticResource Glyph}" FontSize="17" HorizontalAlignment="Center"
+                                               Foreground="{Binding State, Converter={StaticResource StateToBrush}}"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0">
+                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Summary}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding Note}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Foreground="{DynamicResource WarningBrush}"
+                                               Visibility="{Binding Note, Converter={StaticResource NullToCollapsed}}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding StatusLabel}" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{Binding State, Converter={StaticResource StateToBrush}}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- Recommandations (affichées seulement s'il y en a) -->
+        <Border Style="{StaticResource Card}" Margin="0,4,0,0"
+                Visibility="{Binding HasRecommendations, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE946;" Style="{StaticResource Glyph}" FontSize="16" Foreground="{DynamicResource WarningBrush}" Margin="0,0,9,0"/>
+                    <TextBlock Text="{loc:Loc 'Recommandations'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Recommendations}" Margin="0,8,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="•" Foreground="{DynamicResource WarningBrush}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding}" FontSize="13" TextWrapping="Wrap"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <!-- Événements récents -->
+        <Border Style="{StaticResource Card}" Margin="0,14,0,0"
+                Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <TextBlock Text="&#xE9D9;" Style="{StaticResource Glyph}" FontSize="16" Foreground="#60A5FA" Margin="0,0,9,0"/>
+                    <TextBlock Text="{loc:Loc 'Événements récents'}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="{loc:Loc 'Aucun événement récent.'}" Style="{StaticResource MutedText}" FontSize="13" Margin="0,6,0,0"
+                           Visibility="{Binding HasEvents, Converter={StaticResource InverseBoolToVisibility}}"/>
+                <ItemsControl ItemsSource="{Binding Events}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,9">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding TimeText}" Style="{StaticResource MutedText}"/>
+                                    <Ellipse Grid.Column="1" Width="8" Height="8" VerticalAlignment="Top" Margin="0,4,0,0"
+                                             Fill="{Binding Tone, Converter={StaticResource StateToBrush}}"/>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding KindLabel}" FontSize="13" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Summary}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,1,0,0"/>
+                                        <TextBlock Text="{Binding SourceText}" FontSize="11" Foreground="{DynamicResource UnknownBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="3" Text="{Binding LevelLabel}" FontSize="12" FontWeight="SemiBold" Margin="12,0,0,0"
+                                               Foreground="{Binding Tone, Converter={StaticResource StateToBrush}}"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

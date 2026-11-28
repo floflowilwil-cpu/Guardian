@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Guardian.SystemMonitor\Guardian.SystemMonitor.csproj" />
     <ProjectReference Include="..\..\src\Guardian.Service\Guardian.Service.csproj" />
     <ProjectReference Include="..\..\src\Guardian.Quarantine\Guardian.Quarantine.csproj" />
+    <ProjectReference Include="..\..\src\Guardian.Sandbox\Guardian.Sandbox.csproj" />
   </ItemGroup>
 
   <ItemGroup>

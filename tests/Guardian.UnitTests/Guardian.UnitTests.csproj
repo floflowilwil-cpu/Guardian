@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Guardian.Windows\Guardian.Windows.csproj" />
     <ProjectReference Include="..\..\src\Guardian.SystemMonitor\Guardian.SystemMonitor.csproj" />
     <ProjectReference Include="..\..\src\Guardian.Service\Guardian.Service.csproj" />
+    <ProjectReference Include="..\..\src\Guardian.Quarantine\Guardian.Quarantine.csproj" />
   </ItemGroup>
 
   <ItemGroup>

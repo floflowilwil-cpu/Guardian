@@ -1,14 +1,21 @@
 version: 2
 updates:
+  # Paquets NuGet (versions centralisées dans Directory.Packages.props).
+  # Sans "target-branch", Dependabot utilise la branche par défaut du dépôt (main).
   - package-ecosystem: "nuget"
     directory: "/"
-    target-branch: "develop"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # Le projet cible .NET 10 : pas de saut automatique vers les paquets .NET 11.
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Data.Sqlite"
+        update-types: ["version-update:semver-major"]
 
+  # Actions GitHub utilisées par la CI.
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "develop"
     schedule:
       interval: "weekly"

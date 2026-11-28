@@ -43,6 +43,7 @@ public sealed class Loc : INotifyPropertyChanged
     private static readonly Dictionary<string, string> English = new()
     {
         ["Annuler"] = "Cancel",
+        ["Les détails d'une menace apparaîtront ici."] = "Threat details will appear here.",
         ["Automatique"] = "Automatic",
         ["Clair"] = "Light",
         ["Démarrer l'analyse"] = "Start scan",

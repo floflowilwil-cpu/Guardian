@@ -43,6 +43,12 @@ public sealed class Loc : INotifyPropertyChanged
     private static readonly Dictionary<string, string> English = new()
     {
         ["Annuler"] = "Cancel",
+        ["effectuée."] = "completed.",
+        ["Menace mise en quarantaine."] = "Threat quarantined.",
+        ["Menace introuvable : actualisez la liste."] = "Threat not found: refresh the list.",
+        ["La destination existe déjà : restauration refusée pour ne rien écraser."] = "The destination already exists: restore refused so nothing is overwritten.",
+        ["Fichier trop volumineux pour la quarantaine."] = "File too large for quarantine.",
+        ["L'empreinte du fichier restauré ne correspond pas."] = "The restored file's hash does not match.",
         ["Les détails d'une menace apparaîtront ici."] = "Threat details will appear here.",
         ["Automatique"] = "Automatic",
         ["Clair"] = "Light",

@@ -496,7 +496,7 @@ public sealed class IpcGuardianClient : IGuardianClient
     };
 
     private static ThreatItem ToThreatItem(FileScanResult r) => new(
-        Guid.NewGuid(),
+        ThreatId.From(r.Sha256, r.FilePath),
         r.Signature?.ThreatName ?? System.IO.Path.GetFileName(r.FilePath),
         r.Verdict == ContractVerdict.Malicious ? RiskLevel.High : RiskLevel.Medium,
         r.ScannedAtUtc.ToLocalTime(),

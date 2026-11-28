@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Guardian.Contracts\Guardian.Contracts.csproj" />
     <ProjectReference Include="..\Guardian.Scanner\Guardian.Scanner.csproj" />
+    <ProjectReference Include="..\Guardian.Quarantine\Guardian.Quarantine.csproj" />
     <ProjectReference Include="..\Guardian.Signatures\Guardian.Signatures.csproj" />
   </ItemGroup>
 

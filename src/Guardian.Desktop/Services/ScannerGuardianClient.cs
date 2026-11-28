@@ -114,7 +114,7 @@ public sealed class ScannerGuardianClient : IGuardianClient
         _inner.AskAssistantAsync(prompt, ct);
 
     private static ThreatItem ToThreat(FileScanResult r) => new(
-        Guid.NewGuid(),
+        ThreatId.From(r.Sha256, r.FilePath),
         r.Signature?.ThreatName ?? Path.GetFileName(r.FilePath),
         r.Verdict == ContractVerdict.Malicious ? RiskLevel.High : RiskLevel.Medium,
         r.ScannedAtUtc.ToLocalTime(),

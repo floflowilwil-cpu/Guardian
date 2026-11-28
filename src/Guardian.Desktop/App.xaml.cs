@@ -34,7 +34,9 @@ public partial class App : Application
 
         // Branchement principal sur Guardian.Service via IPC Named Pipes authentifié (Guardian.Service.Ipc.v1),
         // avec repli local pour les modules pas encore exposés via IPC.
-        IGuardianClient client = new IpcGuardianClient(new ScannerGuardianClient(new DemoGuardianClient()));
+        // La quarantaine réelle (Guardian.Quarantine) se place au-dessus, en attendant sa commande IPC.
+        IGuardianClient client = new QuarantineGuardianClient(
+            new IpcGuardianClient(new ScannerGuardianClient(new DemoGuardianClient())));
 
         var window = new MainWindow { DataContext = new MainViewModel(client) };
         MainWindow = window;

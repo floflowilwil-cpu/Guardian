@@ -64,6 +64,12 @@ public sealed class QuarantineViewModel : ObservableObject, IPage
         }
     }
 
+    // Motif réel de l'échec (par exemple « La destination existe déjà : restauration refusée… »).
+    private string ErrorText() =>
+        string.IsNullOrWhiteSpace(_client.LastError)
+            ? Loc.T("Le service n'a pas pu traiter la demande.")
+            : Loc.T(_client.LastError);
+
     private async Task RunAsync(Func<IEnumerable<Guid>, Task<bool>> action, string label)
     {
         var ids = Items.Where(i => i.IsChecked).Select(i => i.Id).ToList();
@@ -75,7 +81,7 @@ public sealed class QuarantineViewModel : ObservableObject, IPage
 
         var ok = await action(ids);
         Message = ok
-            ? $"{label} {Loc.T("demandée au service.")}"
-            : Loc.T("Le service n'a pas pu traiter la demande.");
+            ? $"{label} {Loc.T("effectuée.")}"
+            : ErrorText();
     }
 }

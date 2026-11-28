@@ -84,7 +84,9 @@ public sealed class ThreatsViewModel : ObservableObject, IPage
 
         var ok = await _client.QuarantineThreatAsync(Selected.Id);
         Message = ok
-            ? Loc.T("Demande de mise en quarantaine envoyée au service.")
-            : Loc.T("Le service n'a pas pu traiter la demande.");
+            ? Loc.T("Menace mise en quarantaine.")
+            : string.IsNullOrWhiteSpace(_client.LastError)
+                ? Loc.T("Le service n'a pas pu traiter la demande.")
+                : Loc.T(_client.LastError);
     }
 }

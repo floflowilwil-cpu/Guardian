@@ -23,4 +23,7 @@ public interface IGuardianClient
     Task<bool> DeleteAsync(IEnumerable<Guid> ids, CancellationToken ct = default);
 
     Task<string?> AskAssistantAsync(string prompt, CancellationToken ct = default);
+
+    /// <summary>Motif de l'échec de la dernière action de quarantaine (restauration refusée, fichier introuvable…).</summary>
+    string? LastError => null;
 }

@@ -20,6 +20,9 @@ public sealed class StateToBrushConverter : IValueConverter
             RiskLevel.Low => "SuccessBrush",
             RiskLevel.Medium => "WarningBrush",
             RiskLevel.High => "DangerBrush",
+            StatusTone.Good => "SuccessBrush",
+            StatusTone.Warning => "WarningBrush",
+            StatusTone.Bad => "DangerBrush",
             _ => "UnknownBrush",
         };
 

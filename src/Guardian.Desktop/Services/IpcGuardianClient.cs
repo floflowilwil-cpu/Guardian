@@ -118,7 +118,8 @@ public sealed class IpcGuardianClient : IGuardianClient
             ActiveConnections: fallbackSnapshot.ActiveConnections,
             SuspiciousConnections: fallbackSnapshot.SuspiciousConnections,
             Destinations: fallbackSnapshot.Destinations,
-            LastCheck: lastCheck);
+            LastCheck: lastCheck,
+            SystemInfo: BuildSystemOverview(posture, recentEvents));
     }
 
     /// <inheritdoc />
@@ -364,7 +365,8 @@ public sealed class IpcGuardianClient : IGuardianClient
             ActiveConnections: fallbackSnapshot.ActiveConnections,
             SuspiciousConnections: fallbackSnapshot.SuspiciousConnections,
             Destinations: fallbackSnapshot.Destinations,
-            LastCheck: null);
+            LastCheck: null,
+            SystemInfo: fallbackSnapshot.SystemInfo);
 
     private static IReadOnlyList<EngineStatus> BuildEngineStatuses(
         GuardianHealthSnapshot health,
@@ -414,6 +416,84 @@ public sealed class IpcGuardianClient : IGuardianClient
             false => ProtectionState.Stopped,
             null => ProtectionState.Unknown
         };
+
+    /// <summary>Convertit la posture de sécurité Windows et les événements récents du service pour l'écran Système.</summary>
+    private static SystemOverview? BuildSystemOverview(
+        WindowsSecurityPostureDto? posture,
+        IReadOnlyList<SystemSecurityEventDto>? events)
+    {
+        if (posture is null)
+        {
+            return null;
+        }
+
+        static SecurityControlRow Row(SecurityControlKind kind, SecurityControlStatusDto c) => new(
+            kind,
+            MapControlStatus(c),
+            c.Summary,
+            c.Availability == FeatureAvailabilityStatus.RequiresElevation,
+            string.IsNullOrWhiteSpace(c.Recommendation) ? null : c.Recommendation);
+
+        var controls = new[]
+        {
+            Row(SecurityControlKind.Defender, posture.Defender),
+            Row(SecurityControlKind.Firewall, posture.Firewall),
+            Row(SecurityControlKind.Uac, posture.Uac),
+            Row(SecurityControlKind.SecureBoot, posture.SecureBoot),
+            Row(SecurityControlKind.Tpm, posture.Tpm),
+            Row(SecurityControlKind.VirtualizationSecurity, posture.VirtualizationBasedSecurity),
+            Row(SecurityControlKind.CredentialGuard, posture.CredentialGuard),
+            Row(SecurityControlKind.Lsass, posture.LsassProtection),
+        };
+
+        var rows = (events ?? Array.Empty<SystemSecurityEventDto>())
+            .Select(e => new SystemEventRow(
+                e.TimestampUtc.ToLocalTime().DateTime,
+                MapEventKind(e.Category),
+                MapEventLevel(e.Severity),
+                e.Source,
+                e.ProcessName,
+                e.Summary))
+            .ToArray();
+
+        return new SystemOverview(
+            posture.CapturedAtUtc.ToLocalTime().DateTime,
+            posture.OsVersion,
+            posture.WindowsEdition,
+            MapPrivilege(posture.CurrentPrivilege),
+            controls,
+            posture.Recommendations,
+            rows);
+    }
+
+    private static PrivilegeKind MapPrivilege(PrivilegeLevel level) => level switch
+    {
+        PrivilegeLevel.StandardUser => PrivilegeKind.Standard,
+        PrivilegeLevel.Administrator => PrivilegeKind.Administrator,
+        PrivilegeLevel.LocalService or PrivilegeLevel.NetworkService or PrivilegeLevel.LocalSystem => PrivilegeKind.System,
+        _ => PrivilegeKind.Unknown,
+    };
+
+    private static SystemEventKind MapEventKind(SystemEventCategory category) => category switch
+    {
+        SystemEventCategory.ProcessLifecycle => SystemEventKind.Process,
+        SystemEventCategory.RegistryModification => SystemEventKind.Registry,
+        SystemEventCategory.PersistenceChange => SystemEventKind.Persistence,
+        SystemEventCategory.FileBurstAnomaly => SystemEventKind.FileBurst,
+        SystemEventCategory.UsbDeviceEvent => SystemEventKind.Usb,
+        SystemEventCategory.InterProcessAccess => SystemEventKind.InterProcess,
+        SystemEventCategory.SecurityPostureChange => SystemEventKind.PostureChange,
+        _ => SystemEventKind.SelfIntegrity,
+    };
+
+    private static EventLevel MapEventLevel(EventSeverity severity) => severity switch
+    {
+        EventSeverity.Low => EventLevel.Low,
+        EventSeverity.Medium => EventLevel.Medium,
+        EventSeverity.High => EventLevel.High,
+        EventSeverity.Critical => EventLevel.Critical,
+        _ => EventLevel.Info,
+    };
 
     private static ThreatItem ToThreatItem(FileScanResult r) => new(
         Guid.NewGuid(),

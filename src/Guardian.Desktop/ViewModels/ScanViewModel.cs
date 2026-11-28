@@ -9,6 +9,7 @@ namespace Guardian.Desktop.ViewModels;
 public sealed class ScanViewModel : ObservableObject, IPage
 {
     private readonly IGuardianClient _client;
+    private readonly ScanHistoryStore _history;
     private ScanKind _kind = ScanKind.Quick;
     private bool _isScanning;
     private int _percent;
@@ -20,9 +21,10 @@ public sealed class ScanViewModel : ObservableObject, IPage
     private int _threatsFound;
     private CancellationTokenSource? _cts;
 
-    public ScanViewModel(IGuardianClient client)
+    public ScanViewModel(IGuardianClient client, ScanHistoryStore? history = null)
     {
         _client = client;
+        _history = history ?? ScanHistoryStore.Default;
         SelectKindCommand = new RelayCommand(p =>
         {
             if (!IsScanning && p is string s && Enum.TryParse<ScanKind>(s, out var k))
@@ -134,6 +136,9 @@ public sealed class ScanViewModel : ObservableObject, IPage
         Raise(nameof(RunningLabel));
         Message = string.Empty;
         var last = new ScanProgress(0, string.Empty);
+        var startedAt = DateTime.Now;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        ScanOutcome? outcome = null; // reste vide si le service n'a pas démarré l'analyse : rien à enregistrer
         try
         {
             var progress = new Progress<ScanProgress>(p =>
@@ -148,6 +153,11 @@ public sealed class ScanViewModel : ObservableObject, IPage
             });
 
             var accepted = await _client.StartScanAsync(Kind, _customPath, progress, _cts.Token);
+            if (accepted)
+            {
+                outcome = ScanOutcome.Completed;
+            }
+
             Message = accepted
                 ? string.Format(
                     Loc.T("Analyse terminée : {0} fichier(s) analysé(s), {1} ignoré(s), {2} menace(s)."),
@@ -156,10 +166,12 @@ public sealed class ScanViewModel : ObservableObject, IPage
         }
         catch (OperationCanceledException)
         {
+            outcome = ScanOutcome.Cancelled;
             Message = Loc.T("Analyse annulée.");
         }
         catch (Exception ex)
         {
+            outcome = ScanOutcome.Failed;
             AppLog.Write(ex, "Analyse");
             Message = string.Format(Loc.T("L'analyse a échoué : {0}"), ex.Message);
         }
@@ -168,6 +180,15 @@ public sealed class ScanViewModel : ObservableObject, IPage
             IsScanning = false;
             _cts?.Dispose();
             _cts = null;
+
+            if (outcome is { } result)
+            {
+                // Alimente l'écran Historique et rapports.
+                _history.Add(new ScanRecord(
+                    Guid.NewGuid(), startedAt, Kind, clock.Elapsed.TotalSeconds,
+                    Math.Max(0, last.FilesProcessed - last.FilesSkipped), last.FilesSkipped,
+                    last.ThreatsFound, result));
+            }
         }
     }
 }

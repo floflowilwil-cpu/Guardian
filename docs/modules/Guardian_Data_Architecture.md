@@ -18,8 +18,9 @@ La CI échoue si un paquet vulnérable réapparaît. Réévaluer cette épingle 
 
 ## 2. Emplacement
 
-`%ProgramData%\Guardian\data\guardian.db`, résolu par `Environment.SpecialFolder.CommonApplicationData`.
-Les ACL du dossier sont posées par l'installateur et testées dans les tests de livraison.
+`%ProgramData%\Guardian\data\guardian.db`. La source unique des chemins est `IWindowsPrivilegeInspector.GetStandardPaths()`
+(Guardian.Windows) : `Guardian.Data` n'a aucun chemin par défaut et reçoit le sien du service.
+`GuardianService:DataDirectoryOverride` (tests, déploiements particuliers) remplace le dossier, pas le nom du fichier.
 
 ## 3. Conventions de stockage
 
@@ -63,11 +64,22 @@ Les tables `ScanJobs`, `ScanItems`, `QuarantineItems`, `PolicyDecisions`, `Signa
 - `AuditEvents` : ajout seul. Un déclencheur SQL refuse toute modification ; la suppression passe uniquement par `PurgeOlderThanAsync(..., includeAudit: true)`.
 - Pagination plafonnée à 1000 éléments.
 
-## 7. Intégration dans le service (à faire avec Développeur 4)
+## 7. Intégration dans le service
 
-```csharp
-services.AddGuardianData();                 // enregistrement
-await app.Services.GetRequiredService<MigrationRunner>().MigrateAsync();   // au démarrage, avant les moteurs
-```
+`Program.cs` appelle `services.AddGuardianDataStorage()` après `AddGuardianServiceCore(...)`. Cela enregistre :
 
-Un échec de migration doit placer le composant `Guardian.Data` en état `Degraded` ou `Stopped` dans la santé du service, jamais être ignoré.
+- les dépôts (`IThreatRepository`, `IEventRepository`) et `MigrationRunner` ;
+- `GuardianDataHostWorker`, composant de démarrage **surveillé par le watchdog** (nom de composant : `Guardian.Data`).
+
+Déroulement au démarrage :
+1. Si le dossier de données n'existe pas, il est créé avec une **ACL restrictive** (`IWindowsAclInspector.ApplyRestrictiveDirectoryAcl`).
+   Un dossier déjà présent est laissé tel quel : l'auto-vérification d'intégrité en audite les droits.
+2. Les migrations sont appliquées, puis une sonde `SELECT 1` valide l'accès à la base.
+3. Le composant publie sa santé et un battement de cœur régulier (`HeartbeatIntervalSeconds`).
+
+En cas d'échec, le service **continue de tourner** : `Guardian.Data` passe en `Degraded` (donc la santé globale aussi),
+le détail technique reste dans les journaux, et le watchdog relance l'initialisation dans la limite de son plafond de redémarrages.
+`Guardian.Data` n'est pas dans `RequiredComponents` par défaut.
+
+`AddGuardianDataStorage` n'est volontairement pas appelé par `AddGuardianServiceCore` : les tests du service qui utilisent
+un dossier de données inexistant ne créent donc pas de base.

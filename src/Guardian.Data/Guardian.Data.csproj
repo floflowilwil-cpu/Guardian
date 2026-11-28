@@ -1,9 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+
+    <!-- Avis GHSA-2m69-gcr7-jv3q (CVE-2025-6965) : Microsoft.Data.Sqlite embarque un SQLite natif < 3.50.2.
+         Cette référence directe force la bibliothèque native corrigée. Version dans Directory.Packages.props. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Guardian.Contracts\Guardian.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations\*.sql" LogicalName="Migrations/%(Filename)%(Extension)" />
+  </ItemGroup>
 
 </Project>

@@ -21,20 +21,17 @@ public interface ISqliteConnectionFactory
 public sealed class SqliteConnectionFactory : ISqliteConnectionFactory
 {
     private readonly string _connectionString;
+    private readonly string _databasePath;
 
     /// <summary>
-    /// Crée la fabrique et le dossier de la base si nécessaire.
+    /// Crée la fabrique. Aucune opération disque n'est faite ici : le dossier est créé à l'ouverture.
     /// </summary>
     /// <param name="options">Options de la base.</param>
     public SqliteConnectionFactory(GuardianDatabaseOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var directory = Path.GetDirectoryName(options.DatabasePath);
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        _databasePath = options.DatabasePath;
 
         _connectionString = new SqliteConnectionStringBuilder
         {
@@ -48,6 +45,12 @@ public sealed class SqliteConnectionFactory : ISqliteConnectionFactory
     /// <inheritdoc />
     public async Task<SqliteConnection> OpenAsync(CancellationToken cancellationToken = default)
     {
+        var directory = Path.GetDirectoryName(Path.GetFullPath(_databasePath));
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
         var connection = new SqliteConnection(_connectionString);
         try
         {

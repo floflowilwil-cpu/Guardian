@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Guardian.Contracts\Guardian.Contracts.csproj" />
+    <ProjectReference Include="..\Guardian.Data\Guardian.Data.csproj" />
     <ProjectReference Include="..\Guardian.Windows\Guardian.Windows.csproj" />
     <ProjectReference Include="..\Guardian.SystemMonitor\Guardian.SystemMonitor.csproj" />
     <ProjectReference Include="..\Guardian.Scanner\Guardian.Scanner.csproj" />
